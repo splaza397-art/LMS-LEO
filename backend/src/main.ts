@@ -9,7 +9,8 @@ import { config } from './config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.set('trust proxy', 'loopback');
+  // Solo los proxies listados pueden fijar la IP del cliente (X-Forwarded-For). Nunca 'true'.
+  app.set('trust proxy', config.trustedProxies);
   app.useBodyParser('raw', { type: ['image/png', 'image/jpeg', 'image/webp'], limit: '5mb' });
   app.use(helmet());
   app.enableCors({ origin: config.corsOrigins, credentials: false });
@@ -24,8 +25,8 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  await app.listen(config.port);
-  new Logger('Bootstrap').log(`API en http://localhost:${config.port}/api`);
+  await app.listen(config.port, config.host);
+  new Logger('Bootstrap').log(`API en http://${config.host}:${config.port}/api (proxies de confianza: ${config.trustedProxies.join(', ')})`);
 }
 
 void bootstrap();

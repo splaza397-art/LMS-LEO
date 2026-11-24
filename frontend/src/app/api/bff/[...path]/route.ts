@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { forwardedFor } from "@/lib/client-ip";
 import { COOKIES, unseal } from "@/lib/session-core";
 
 const ALLOWED = /^v1\/(me|admin)(\/[A-Za-z0-9_:.-]+)*$/;
@@ -25,7 +26,7 @@ async function forward(request: NextRequest, { params }: { params: Promise<{ pat
       headers: {
         authorization: `Bearer ${access.t}`,
         ...(hasBody ? { "content-type": isImage ? declared : "application/json" } : {}),
-        ...(request.headers.get("x-forwarded-for") ? { "x-forwarded-for": request.headers.get("x-forwarded-for")! } : {}),
+        ...forwardedFor(request.headers),
       },
       body: !hasBody ? undefined : isImage ? await request.arrayBuffer() : await request.text(),
       cache: "no-store",

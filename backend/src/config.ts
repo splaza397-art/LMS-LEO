@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { parseTrustedProxies } from './security/trusted-proxies';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -8,6 +9,10 @@ function required(name: string): string {
 
 export const config = {
   port: Number(process.env.PORT ?? 4000),
+  /** Interfaz de escucha. En DEV solo la máquina local; en contenedores, 0.0.0.0 dentro de una red interna. */
+  host: process.env.HOST ?? '127.0.0.1',
+  /** Proxies de confianza para X-Forwarded-For. Ver src/security/trusted-proxies.ts. */
+  trustedProxies: parseTrustedProxies(process.env.TRUSTED_PROXIES),
   production: process.env.NODE_ENV === 'production',
   databaseUrl: required('DATABASE_URL'),
   corsOrigins: required('CORS_ORIGINS').split(',').map((o) => o.trim()),
