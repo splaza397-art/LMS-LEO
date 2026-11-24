@@ -12,6 +12,8 @@ Portal Next.js, backend NestJS, Moodle 5.3 LTS, identidad con Keycloak (OIDC) y 
 | `e2e/` | Pruebas de extremo a extremo con Playwright |
 | `documentation/` | Manuales, arquitectura y evidencias. Índice en [documentation/README.md](documentation/README.md) |
 
+Reglas para asistentes de IA y convenciones del código: [AGENTS.md](AGENTS.md).
+
 ## Arranque en desarrollo
 
 Requisitos: Docker Desktop, Node.js 24 y, para la app, Android Studio.
@@ -60,5 +62,9 @@ adb reverse tcp:4000 tcp:4000 && adb reverse tcp:8180 tcp:8180 && adb reverse tc
 ## Pruebas
 
 ```bash
+cd backend && npm test                 # unitarias
+cd backend && npm run test:integration # con PostgreSQL (servicios encendidos)
+cd backend && npm run test:contracts   # compatibilidad de la API con la referencia previa a la Fase 2
+cd frontend && npm test                # unitarias del portal
 cd e2e && npm install && npx playwright install chromium && npx playwright test
 ```

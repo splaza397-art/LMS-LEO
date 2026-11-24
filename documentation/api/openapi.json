@@ -1,23 +1,9 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/api/estado": {
-      "get": {
-        "operationId": "StatusController_status",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "estado"
-        ]
-      }
-    },
     "/api/v1/auth/register": {
       "post": {
-        "operationId": "PublicController_register_v1",
+        "operationId": "UsersController_register_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -34,180 +20,19 @@
             "description": ""
           }
         },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/programs": {
-      "get": {
-        "operationId": "PublicController_programs_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/programs/{slug}": {
-      "get": {
-        "operationId": "PublicController_program_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "bearer": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
         "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/content/{type}": {
-      "get": {
-        "operationId": "PublicController_content_v1",
-        "parameters": [
-          {
-            "name": "type",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/content/{type}/{slug}": {
-      "get": {
-        "operationId": "PublicController_contentItem_v1",
-        "parameters": [
-          {
-            "name": "type",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/info-requests": {
-      "post": {
-        "operationId": "PublicController_infoRequest_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InfoRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/media/{id}": {
-      "get": {
-        "operationId": "PublicController_media_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/sitemap-data": {
-      "get": {
-        "operationId": "PublicController_sitemapData_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
-        ]
-      }
-    },
-    "/api/v1/redirects": {
-      "get": {
-        "operationId": "PublicController_redirects_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "publico"
+          "usuarios"
         ]
       }
     },
     "/api/v1/me": {
       "get": {
-        "operationId": "MeController_me_v1",
+        "operationId": "UsersController_me_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -220,11 +45,11 @@
           }
         ],
         "tags": [
-          "mi-iinicia"
+          "usuarios"
         ]
       },
       "patch": {
-        "operationId": "MeController_update_v1",
+        "operationId": "UsersController_update_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -247,91 +72,73 @@
           }
         ],
         "tags": [
-          "mi-iinicia"
+          "usuarios"
         ]
       }
     },
-    "/api/v1/me/courses": {
+    "/api/v1/admin/users": {
       "get": {
-        "operationId": "MeController_courses_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/courses/{id}": {
-      "get": {
-        "operationId": "MeController_course_v1",
+        "operationId": "UsersController_list_v1",
         "parameters": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/upcoming": {
-      "get": {
-        "operationId": "MeController_upcoming_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/campus-link": {
-      "get": {
-        "operationId": "MeController_campusLink_v1",
-        "parameters": [
-          {
-            "name": "courseId",
-            "required": true,
+            "name": "q",
+            "required": false,
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "cmid",
-            "required": true,
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
             "in": "query",
             "schema": {
               "type": "string"
@@ -349,229 +156,13 @@
           }
         ],
         "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/teaching": {
-      "get": {
-        "operationId": "MeController_teaching_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/applications": {
-      "get": {
-        "operationId": "MeController_applications_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      },
-      "post": {
-        "operationId": "MeController_apply_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApplyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/notifications": {
-      "get": {
-        "operationId": "MeController_listNotifications_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/notifications/{id}/read": {
-      "post": {
-        "operationId": "MeController_read_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/devices": {
-      "post": {
-        "operationId": "MeController_device_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeviceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/me/devices/{token}": {
-      "delete": {
-        "operationId": "MeController_removeDevice_v1",
-        "parameters": [
-          {
-            "name": "token",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "mi-iinicia"
-        ]
-      }
-    },
-    "/api/v1/admin/stats": {
-      "get": {
-        "operationId": "AdminController_stats_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/users": {
-      "get": {
-        "operationId": "AdminController_users_v1",
-        "parameters": [
-          {
-            "name": "q",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
+          "usuarios"
         ]
       }
     },
     "/api/v1/admin/users/{id}/suspension": {
       "patch": {
-        "operationId": "AdminController_suspend_v1",
+        "operationId": "UsersController_suspend_v1",
         "parameters": [
           {
             "name": "id",
@@ -603,13 +194,13 @@
           }
         ],
         "tags": [
-          "administracion"
+          "usuarios"
         ]
       }
     },
     "/api/v1/admin/users/{id}/roles": {
       "put": {
-        "operationId": "AdminController_roles_v1",
+        "operationId": "UsersController_roles_v1",
         "parameters": [
           {
             "name": "id",
@@ -641,13 +232,97 @@
           }
         ],
         "tags": [
-          "administracion"
+          "usuarios"
+        ]
+      }
+    },
+    "/api/v1/admin/audit": {
+      "get": {
+        "operationId": "AuditController_list_v1",
+        "parameters": [
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "auditoria"
         ]
       }
     },
     "/api/v1/admin/users/{id}/sync": {
       "post": {
-        "operationId": "AdminController_syncUser_v1",
+        "operationId": "SynchronizationController_syncUser_v1",
         "parameters": [
           {
             "name": "id",
@@ -669,13 +344,41 @@
           }
         ],
         "tags": [
-          "administracion"
+          "sincronizacion"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/enrolments": {
+      "get": {
+        "operationId": "EnrollmentsController_list_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "matriculas"
         ]
       }
     },
     "/api/v1/admin/users/{id}/enrolment": {
       "patch": {
-        "operationId": "AdminController_enrolment_v1",
+        "operationId": "EnrollmentsController_setStatus_v1",
         "parameters": [
           {
             "name": "id",
@@ -707,17 +410,125 @@
           }
         ],
         "tags": [
-          "administracion"
+          "matriculas"
+        ]
+      }
+    },
+    "/api/estado": {
+      "get": {
+        "operationId": "HealthController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "estado"
+        ]
+      }
+    },
+    "/api/v1/me/applications": {
+      "get": {
+        "operationId": "AdmissionsController_mine_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admisiones"
+        ]
+      },
+      "post": {
+        "operationId": "AdmissionsController_apply_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admisiones"
         ]
       }
     },
     "/api/v1/admin/applications": {
       "get": {
-        "operationId": "AdminController_applications_v1",
+        "operationId": "AdmissionsController_applications_v1",
         "parameters": [
           {
             "name": "status",
-            "required": true,
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
             "in": "query",
             "schema": {
               "type": "string"
@@ -735,13 +546,13 @@
           }
         ],
         "tags": [
-          "administracion"
+          "admisiones"
         ]
       }
     },
     "/api/v1/admin/applications/{id}/decision": {
       "post": {
-        "operationId": "AdminController_decide_v1",
+        "operationId": "AdmissionsController_decide_v1",
         "parameters": [
           {
             "name": "id",
@@ -773,37 +584,20 @@
           }
         ],
         "tags": [
-          "administracion"
+          "admisiones"
         ]
       }
     },
-    "/api/v1/admin/programs": {
-      "get": {
-        "operationId": "AdminController_programs_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      },
+    "/api/v1/info-requests": {
       "post": {
-        "operationId": "AdminController_createProgram_v1",
+        "operationId": "AdmissionsController_infoRequest_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProgramDto"
+                "$ref": "#/components/schemas/InfoRequestDto"
               }
             }
           }
@@ -819,294 +613,71 @@
           }
         ],
         "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/programs/{id}": {
-      "put": {
-        "operationId": "AdminController_updateProgram_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProgramDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/programs/{id}/cohorts": {
-      "post": {
-        "operationId": "AdminController_createCohort_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CohortDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/programs/{id}/courses": {
-      "post": {
-        "operationId": "AdminController_linkCourse_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProgramCourseDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/programs/{id}/courses/{courseId}": {
-      "delete": {
-        "operationId": "AdminController_unlinkCourse_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "courseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/programs/{id}/teachers": {
-      "get": {
-        "operationId": "AdminController_teachers_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      },
-      "put": {
-        "operationId": "AdminController_setTeacher_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TeacherDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/users/{id}/enrolments": {
-      "get": {
-        "operationId": "AdminController_enrolments_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/teachers": {
-      "get": {
-        "operationId": "AdminController_teacherCandidates_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      }
-    },
-    "/api/v1/admin/reports": {
-      "get": {
-        "operationId": "AdminController_reports_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
+          "admisiones"
         ]
       }
     },
     "/api/v1/admin/info-requests": {
       "get": {
-        "operationId": "AdminController_infoRequests_v1",
-        "parameters": [],
+        "operationId": "AdmissionsController_infoRequests_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1118,13 +689,13 @@
           }
         ],
         "tags": [
-          "administracion"
+          "admisiones"
         ]
       }
     },
     "/api/v1/admin/info-requests/{id}": {
       "patch": {
-        "operationId": "AdminController_infoRequestStatus_v1",
+        "operationId": "AdmissionsController_infoRequestStatus_v1",
         "parameters": [
           {
             "name": "id",
@@ -1156,14 +727,88 @@
           }
         ],
         "tags": [
-          "administracion"
+          "admisiones"
         ]
       }
     },
-    "/api/v1/admin/media": {
-      "post": {
-        "operationId": "AdminController_upload_v1",
+    "/api/v1/programs": {
+      "get": {
+        "operationId": "ProgramsController_published_v1",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/programs/{slug}": {
+      "get": {
+        "operationId": "ProgramsController_program_v1",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs": {
+      "get": {
+        "operationId": "ProgramsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      },
+      "post": {
+        "operationId": "ProgramsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1175,13 +820,246 @@
           }
         ],
         "tags": [
-          "administracion"
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs/{id}": {
+      "put": {
+        "operationId": "ProgramsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs/{id}/cohorts": {
+      "post": {
+        "operationId": "ProgramsController_createCohort_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CohortDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs/{id}/courses": {
+      "post": {
+        "operationId": "ProgramsController_linkCourse_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramCourseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs/{id}/courses/{courseId}": {
+      "delete": {
+        "operationId": "ProgramsController_unlinkCourse_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "courseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/programs/{id}/teachers": {
+      "get": {
+        "operationId": "ProgramsController_teachers_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      },
+      "put": {
+        "operationId": "ProgramsController_setTeacher_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
+        ]
+      }
+    },
+    "/api/v1/admin/teachers": {
+      "get": {
+        "operationId": "ProgramsController_teacherCandidates_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "programas"
         ]
       }
     },
     "/api/v1/admin/moodle/courses": {
       "get": {
-        "operationId": "AdminController_moodleCourses_v1",
+        "operationId": "ProgramsController_moodleCourses_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -1194,25 +1072,44 @@
           }
         ],
         "tags": [
-          "administracion"
+          "programas"
         ]
       }
     },
-    "/api/v1/admin/content": {
+    "/api/v1/me/notifications": {
       "get": {
-        "operationId": "AdminController_content_v1",
+        "operationId": "NotificationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "avisos"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/{id}/read": {
+      "post": {
+        "operationId": "NotificationsController_read_v1",
         "parameters": [
           {
-            "name": "type",
+            "name": "id",
             "required": true,
-            "in": "query",
+            "in": "path",
             "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         },
@@ -1222,18 +1119,20 @@
           }
         ],
         "tags": [
-          "administracion"
+          "avisos"
         ]
-      },
+      }
+    },
+    "/api/v1/me/devices": {
       "post": {
-        "operationId": "AdminController_createContent_v1",
+        "operationId": "NotificationsController_device_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ContentDto"
+                "$ref": "#/components/schemas/DeviceDto"
               }
             }
           }
@@ -1249,52 +1148,16 @@
           }
         ],
         "tags": [
-          "administracion"
+          "avisos"
         ]
       }
     },
-    "/api/v1/admin/content/{id}": {
-      "put": {
-        "operationId": "AdminController_updateContent_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ContentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracion"
-        ]
-      },
+    "/api/v1/me/devices/{token}": {
       "delete": {
-        "operationId": "AdminController_deleteContent_v1",
+        "operationId": "NotificationsController_removeDevice_v1",
         "parameters": [
           {
-            "name": "id",
+            "name": "token",
             "required": true,
             "in": "path",
             "schema": {
@@ -1313,13 +1176,13 @@
           }
         ],
         "tags": [
-          "administracion"
+          "avisos"
         ]
       }
     },
     "/api/v1/admin/notifications": {
       "post": {
-        "operationId": "AdminController_broadcast_v1",
+        "operationId": "NotificationsController_broadcast_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1342,13 +1205,13 @@
           }
         ],
         "tags": [
-          "administracion"
+          "avisos"
         ]
       }
     },
-    "/api/v1/admin/audit": {
+    "/api/v1/me/courses": {
       "get": {
-        "operationId": "AdminController_auditLog_v1",
+        "operationId": "DashboardController_courses_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -1361,7 +1224,463 @@
           }
         ],
         "tags": [
-          "administracion"
+          "mi-iinicia"
+        ]
+      }
+    },
+    "/api/v1/me/courses/{id}": {
+      "get": {
+        "operationId": "DashboardController_course_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mi-iinicia"
+        ]
+      }
+    },
+    "/api/v1/me/upcoming": {
+      "get": {
+        "operationId": "DashboardController_upcoming_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mi-iinicia"
+        ]
+      }
+    },
+    "/api/v1/me/campus-link": {
+      "get": {
+        "operationId": "DashboardController_campusLink_v1",
+        "parameters": [
+          {
+            "name": "courseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cmid",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mi-iinicia"
+        ]
+      }
+    },
+    "/api/v1/me/teaching": {
+      "get": {
+        "operationId": "DashboardController_teaching_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mi-iinicia"
+        ]
+      }
+    },
+    "/api/v1/content/{type}": {
+      "get": {
+        "operationId": "ContentController_published_v1",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/content/{type}/{slug}": {
+      "get": {
+        "operationId": "ContentController_item_v1",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/media/{id}": {
+      "get": {
+        "operationId": "ContentController_media_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/sitemap-data": {
+      "get": {
+        "operationId": "ContentController_sitemapData_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/redirects": {
+      "get": {
+        "operationId": "ContentController_redirects_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/admin/media": {
+      "post": {
+        "operationId": "ContentController_upload_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/admin/content": {
+      "get": {
+        "operationId": "ContentController_list_v1",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      },
+      "post": {
+        "operationId": "ContentController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/admin/content/{id}": {
+      "put": {
+        "operationId": "ContentController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "contenidos"
+        ]
+      }
+    },
+    "/api/v1/admin/stats": {
+      "get": {
+        "operationId": "ReportsController_stats_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "reportes"
+        ]
+      }
+    },
+    "/api/v1/admin/reports": {
+      "get": {
+        "operationId": "ReportsController_byProgram_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "reportes"
         ]
       }
     }
@@ -1387,19 +1706,7 @@
         "type": "object",
         "properties": {}
       },
-      "InfoRequestDto": {
-        "type": "object",
-        "properties": {}
-      },
       "UpdateProfileDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ApplyDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "DeviceDto": {
         "type": "object",
         "properties": {}
       },
@@ -1415,7 +1722,19 @@
         "type": "object",
         "properties": {}
       },
+      "ApplyDto": {
+        "type": "object",
+        "properties": {}
+      },
       "DecisionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "InfoRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "InfoStatusDto": {
         "type": "object",
         "properties": {}
       },
@@ -1435,15 +1754,15 @@
         "type": "object",
         "properties": {}
       },
-      "InfoStatusDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ContentDto": {
+      "DeviceDto": {
         "type": "object",
         "properties": {}
       },
       "BroadcastDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ContentDto": {
         "type": "object",
         "properties": {}
       }

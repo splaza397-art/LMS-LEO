@@ -5,7 +5,7 @@
 | Componente | Tecnología | Responsabilidad | Carpeta |
 |---|---|---|---|
 | Portal | Next.js 16, React 19, TypeScript, Tailwind 4 | Sitio institucional, registro, Mi IINICIA, panel de gestión. Actúa como BFF del navegador | `frontend/` |
-| Backend | NestJS 11, Node.js 24 | API versionada, reglas de negocio, RBAC, auditoría, integración con Moodle y Keycloak | `backend/` |
+| Backend | NestJS 11, Node.js 24 | API versionada en 12 módulos funcionales (controlador, servicio y repositorio SQL por módulo), RBAC, auditoría, integración con Moodle y Keycloak. Detalle en [13-refactorizacion-backend.md](13-refactorizacion-backend.md) | `backend/` |
 | Base del portal | PostgreSQL 17 | Usuarios, roles, programas, solicitudes, matrículas, contenidos, auditoría | migraciones en `backend/src/db/migrations` |
 | Identidad | Keycloak 26.4 (OIDC/OAuth 2.0) | Cuentas, contraseñas, sesiones, MFA, SSO. Tema `iinicia` para la pantalla de acceso y los correos, en español de tú | `infrastructure/keycloak` |
 | LMS | Moodle 5.3.1 LTS, PHP 8.4 | Cursos, actividades, calificaciones, progreso | imagen en `infrastructure/moodle` |
@@ -36,7 +36,8 @@ flowchart LR
 - **Moodle es la fuente académica.** Cursos, actividades, calificaciones y progreso viven en Moodle. El portal solo los consulta.
 - **Sin acceso directo a bases ajenas.** Cada servicio tiene su propia base y su propio usuario. El backend habla con Moodle solo por servicios web y con Keycloak solo por su API.
 - **Ningún secreto en el cliente.** El navegador recibe cookies `httpOnly` cifradas (A256GCM) y la app solo tokens de usuario. El token de servicio de Moodle y los secretos de Keycloak se quedan en el servidor.
-- **API-first.** Las capacidades se exponen en `/api/v1`, documentadas con OpenAPI.
+- **API-first.** Las capacidades se exponen en `/api/v1`, documentadas con OpenAPI ([api/openapi.json](api/openapi.json)) y con un inventario generado desde el código ([api/inventario-endpoints.md](api/inventario-endpoints.md)). Las pruebas de contrato impiden cambios incompatibles.
+- **Módulos con dueño de datos.** Cada módulo del backend escribe solo sus tablas; las operaciones que abarcan varios módulos comparten la transacción (ver documento 13).
 
 ## Flujos principales
 

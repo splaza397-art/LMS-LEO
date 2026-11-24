@@ -7,14 +7,14 @@ Total: **52** endpoints. "sesión" = requiere sesión válida, sin permiso adici
 | Método | Ruta | Acceso | Código | Límite | Cuerpo | Parámetros |
 |---|---|---|---|---|---|---|
 | GET | `/api/estado` | público | 200 |  |  |  |
-| GET | `/api/v1/admin/applications` | `applications:review` | 200 |  |  | ?status |
+| GET | `/api/v1/admin/applications` | `applications:review` | 200 |  |  | ?order ?page ?pageSize ?programId ?q ?sort ?status |
 | POST | `/api/v1/admin/applications/:id/decision` | `applications:review` | 201 |  | DecisionDto | id (ParseUUIDPipe) |
-| GET | `/api/v1/admin/audit` | `audit:read` | 200 |  |  |  |
-| GET | `/api/v1/admin/content` | `content:manage` | 200 |  |  | ?type |
+| GET | `/api/v1/admin/audit` | `audit:read` | 200 |  |  | ?action ?from ?order ?page ?pageSize ?q ?sort ?to |
+| GET | `/api/v1/admin/content` | `content:manage` | 200 |  |  | ?order ?page ?pageSize ?q ?sort ?status ?type |
 | POST | `/api/v1/admin/content` | `content:manage` | 201 |  | ContentDto |  |
 | DELETE | `/api/v1/admin/content/:id` | `content:manage` | 200 |  |  | id (ParseUUIDPipe) |
 | PUT | `/api/v1/admin/content/:id` | `content:manage` | 200 |  | ContentDto | id (ParseUUIDPipe) |
-| GET | `/api/v1/admin/info-requests` | `info_requests:manage` | 200 |  |  |  |
+| GET | `/api/v1/admin/info-requests` | `info_requests:manage` | 200 |  |  | ?order ?page ?pageSize ?programId ?q ?sort ?status |
 | PATCH | `/api/v1/admin/info-requests/:id` | `info_requests:manage` | 200 |  | InfoStatusDto | id (ParseUUIDPipe) |
 | POST | `/api/v1/admin/media` | `content:manage` | 201 |  |  |  |
 | GET | `/api/v1/admin/moodle/courses` | `programs:manage` | 200 |  |  |  |
@@ -30,7 +30,7 @@ Total: **52** endpoints. "sesión" = requiere sesión válida, sin permiso adici
 | GET | `/api/v1/admin/reports` | `reports:read` | 200 |  |  |  |
 | GET | `/api/v1/admin/stats` | `users:read` | 200 |  |  |  |
 | GET | `/api/v1/admin/teachers` | `programs:manage` | 200 |  |  |  |
-| GET | `/api/v1/admin/users` | `users:read` | 200 |  |  | ?q |
+| GET | `/api/v1/admin/users` | `users:read` | 200 |  |  | ?order ?page ?pageSize ?programId ?q ?role ?sort ?status |
 | PATCH | `/api/v1/admin/users/:id/enrolment` | `enrolments:manage` | 200 |  | EnrolmentDto | id (ParseUUIDPipe) |
 | GET | `/api/v1/admin/users/:id/enrolments` | `enrolments:manage` | 200 |  |  | id (ParseUUIDPipe) |
 | PUT | `/api/v1/admin/users/:id/roles` | `roles:manage` | 200 |  | RolesDto | id (ParseUUIDPipe) |

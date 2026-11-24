@@ -20,6 +20,12 @@
     "body": null,
     "params": [],
     "query": [
+      "order",
+      "page",
+      "pageSize",
+      "programId",
+      "q",
+      "sort",
       "status"
     ]
   },
@@ -45,7 +51,16 @@
     "throttle": null,
     "body": null,
     "params": [],
-    "query": []
+    "query": [
+      "action",
+      "from",
+      "order",
+      "page",
+      "pageSize",
+      "q",
+      "sort",
+      "to"
+    ]
   },
   {
     "method": "GET",
@@ -57,6 +72,12 @@
     "body": null,
     "params": [],
     "query": [
+      "order",
+      "page",
+      "pageSize",
+      "q",
+      "sort",
+      "status",
       "type"
     ]
   },
@@ -106,7 +127,15 @@
     "throttle": null,
     "body": null,
     "params": [],
-    "query": []
+    "query": [
+      "order",
+      "page",
+      "pageSize",
+      "programId",
+      "q",
+      "sort",
+      "status"
+    ]
   },
   {
     "method": "PATCH",
@@ -298,7 +327,14 @@
     "body": null,
     "params": [],
     "query": [
-      "q"
+      "order",
+      "page",
+      "pageSize",
+      "programId",
+      "q",
+      "role",
+      "sort",
+      "status"
     ]
   },
   {
