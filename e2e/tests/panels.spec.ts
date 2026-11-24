@@ -1,6 +1,6 @@
 // Punto 8: cada rol ve un panel distinto en Mi IINICIA.
 import { expect, test } from "@playwright/test";
-import { session } from "./helpers";
+import { privacyMask, session } from "./helpers";
 
 test("profesor: ve sus grupos con estudiantes y avance real de Moodle", async ({ browser }) => {
   const page = await session(browser, "profesor");
@@ -9,7 +9,7 @@ test("profesor: ve sus grupos con estudiantes y avance real de Moodle", async ({
   await expect(course.getByRole("row", { name: /Demo Estudiante/ })).toBeVisible({ timeout: 30_000 });
   await expect(course.getByRole("row", { name: /Demo Estudiante/ })).toContainText("%");
   await expect(page.getByRole("heading", { name: "Mis solicitudes" })).toHaveCount(0);
-  await page.screenshot({ path: "../documentation/evidencias/capturas/40-panel-profesor.png", fullPage: true });
+  await page.screenshot({ path: "../documentation/evidencias/capturas/40-panel-profesor.png", fullPage: true, mask: privacyMask(page) });
 });
 
 test("estudiante: ve sus cursos, avance y próximas actividades, no grupos", async ({ browser }) => {
@@ -19,7 +19,7 @@ test("estudiante: ve sus cursos, avance y próximas actividades, no grupos", asy
   await expect(page.getByText("Proyecto final")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mis grupos" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Abrir panel" })).toHaveCount(0);
-  await page.screenshot({ path: "../documentation/evidencias/capturas/41-panel-estudiante.png", fullPage: true });
+  await page.screenshot({ path: "../documentation/evidencias/capturas/41-panel-estudiante.png", fullPage: true, mask: privacyMask(page) });
 });
 
 test("coordinador: supervisa los cursos de su programa y abre el panel de gestión", async ({ browser }) => {

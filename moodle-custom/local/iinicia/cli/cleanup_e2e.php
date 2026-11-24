@@ -9,7 +9,7 @@ require_once($CFG->dirroot . '/cohort/lib.php');
 \core\session\manager::set_user(get_admin());
 
 $users = 0;
-$pattern = '/^(poc|profesor|alumno|rolmoodle)\.[0-9]+@iinicia\.test$/';
+$pattern = '/^(poc|profesor|alumno|rolmoodle|concurrencia)\.[0-9]+@iinicia\.test$/';
 foreach ($DB->get_records_select('user', "deleted = 0 AND email LIKE '%@iinicia.test'") as $user) {
     if (preg_match($pattern, $user->email)) {
         user_delete_user($user);

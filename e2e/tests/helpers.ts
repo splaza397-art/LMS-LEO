@@ -1,4 +1,4 @@
-import { expect, type Browser, type Page } from "@playwright/test";
+import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { config } from "dotenv";
 import { resolve } from "node:path";
@@ -76,3 +76,11 @@ export async function newAccount(browser: Browser, prefix: string) {
 
 /** PNG valido de 1x1 pixel. */
 export const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+
+/**
+ * Las capturas de evidencia se versionan en Git: se ocultan las filas con correos de personas reales.
+ * Solo quedan visibles las cuentas de prueba (@iinicia.test).
+ */
+export function privacyMask(page: Page): Locator[] {
+  return [page.locator("tr, li").filter({ hasText: /@/ }).filter({ hasNotText: /@iinicia\.test/ })];
+}

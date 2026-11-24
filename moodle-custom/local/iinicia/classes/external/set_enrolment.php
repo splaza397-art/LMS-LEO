@@ -44,6 +44,15 @@ class set_enrolment extends external_api {
         }
 
         $status = $p['active'] ? ENROL_USER_ACTIVE : ENROL_USER_SUSPENDED;
+        // Bloqueo por persona y curso: la consulta y la alta no pueden intercalarse con otra llamada igual.
+        return \local_iinicia\lock::run('enrol_' . $p['userid'] . '_' . $course->id,
+            function () use ($p, $plugin, $instance, $course, $roleid, $status) {
+                return self::apply($p, $plugin, $instance, $course, $roleid, $status);
+            });
+    }
+
+    private static function apply(array $p, $plugin, \stdClass $instance, \stdClass $course, int $roleid, int $status): array {
+        global $DB;
         $existing = $DB->record_exists('user_enrolments', ['enrolid' => $instance->id, 'userid' => $p['userid']]);
         if ($existing) {
             $plugin->update_user_enrol($instance, $p['userid'], $status);
