@@ -144,19 +144,16 @@ Las pruebas nuevas se ejecutaron primero contra el código sin corregir:
 
 | Commit | Contenido |
 |---|---|
-| `b5706d6` | `chore: establish IINICIA baseline after technical audit` (rama `main`) |
-| `a5edc1a` | `fix(sync): prevent duplicate Moodle cohorts under concurrent synchronization` |
-| `5645ec4` | `fix(security): stop X-Forwarded-For spoofing from bypassing rate limits` |
-| `9cb4deb` | `chore(deps): remove unused nodemailer (high-severity advisories)` |
-| `b94d50e` | `docs: document phase 1.5 stabilization and updated development plan` |
-| `a063c9b` | `fix(e2e): mask real people in versioned evidence screenshots` |
+| `fff4392` | `chore: establish IINICIA baseline after technical audit` (rama `main`) |
+| `f5a9a1e` | `fix(sync): prevent duplicate Moodle cohorts under concurrent synchronization` |
+| `2ea6d9c` | `fix(security): stop X-Forwarded-For spoofing from bypassing rate limits` |
+| `287411d` | `chore(deps): remove unused nodemailer (high-severity advisories)` |
+| `0de7780` | `docs: document phase 1.5 stabilization and updated development plan` |
+| `cd79feb` | `fix(e2e): mask real people in versioned evidence screenshots` |
 
 ## 10. Riesgos pendientes
 
-0. **Datos personales en el historial de Git (local, sin publicar).**
-   - **Qué pasó:** la captura de evidencia `40-panel-profesor.png` mostraba a una persona real (nombre completo y correo de una cuenta de Gmail que estaba matriculada en Base de Datos durante las pruebas de roles). Esa captura quedó en los commits `b5706d6` y `b94d50e`. Ningún commit se ha subido a ningún servidor, y el `.zip` entregado antes no la contiene.
-   - **Corrección:** las capturas ahora ocultan con `mask` toda fila que tenga un correo distinto de `@iinicia.test` (`privacyMask()` en `e2e/tests/helpers.ts`), y la captura se regeneró.
-   - **Pendiente:** las versiones anteriores siguen en esos dos commits. Para borrarlas del historial hay que reescribirlo, lo que cambia los identificadores de los commits. Requiere tu autorización y debe hacerse antes de subir el repositorio a cualquier servidor.
+0. **Datos personales en el historial de Git: resuelto.** Ver la sección 12.
 
 1. **Producción necesita Nginx bien configurado:**
    - Nginx debe escribir `X-Forwarded-For`.
@@ -192,3 +189,44 @@ Las pruebas nuevas se ejecutaron primero contra el código sin corregir:
   ```
 
 - **Respaldo de datos:** `node infrastructure/scripts/backup.mjs --verify`, antes de cualquier cambio en un servidor real.
+
+## 12. Limpieza de datos personales del historial de Git (24/11/2026)
+
+**Hallazgo:** la captura `40-panel-profesor.png` mostraba el nombre completo y el correo de una persona real: una cuenta ajena a las de prueba, matriculada en el curso durante las pruebas de roles. Dos versiones de la captura tenían esos datos. Ninguna se publicó: el repositorio nunca tuvo un remoto.
+
+**Verificaciones previas:**
+
+| Revisión | Resultado |
+|---|---|
+| Cambios pendientes, remotos, etiquetas, stash | Ninguno |
+| Ramas y referencias | Solo `main` y `fix/pre-refactor-stabilization` |
+| Versiones de la captura | 3: dos con datos personales y una ya enmascarada |
+| Texto de todo el historial | Se buscaron el dominio de correo, el correo y partes del nombre, reportando solo conteos. Sin coincidencias reales; las 20 coincidencias de un patrón eran palabras como "reemplaza" |
+| Metadatos de los commits | El autor es el nombre corto (4 caracteres) de la configuración global de Git del equipo, sin correo con `@`. No se modificó |
+| Configuración local de Git | Sin datos personales |
+| Copias fuera del repositorio | El `.zip` entregado: la captura es anterior y no contiene datos. Resultados de pruebas y reporte HTML: sin capturas. Carpeta temporal de trabajo: había una copia extraída para revisión, que se borró. `backups/` (fuera de Git): contiene volcados de las bases con las cuentas registradas; **no se tocaron** porque son tus respaldos |
+
+**Procedimiento:**
+
+1. `git filter-branch --index-filter`, porque `git-filter-repo` no está instalado. En cada commit, la captura se sustituyó por la versión enmascarada (blob `e283ff6`). No se cambió ningún otro archivo ni mensaje.
+2. Borrado de `refs/original`, `git reflog expire --expire=now --all` y `git gc --prune=now --aggressive`.
+
+**Verificación posterior:**
+- Los dos blobs originales y los 7 commits anteriores ya no existen (`git cat-file -e` falla).
+- `git fsck --unreachable --no-reflogs`: 0 objetos.
+- Reflog: 0 entradas.
+- Todos los commits contienen solo la versión enmascarada.
+- La copia de trabajo no tiene diferencias.
+- Las correcciones I1, S1 y S2 siguen presentes.
+
+**Identificadores nuevos** (cambiaron todos):
+
+| Antes | Ahora | Commit |
+|---|---|---|
+| b5706d6 | `fff4392` | Línea base |
+| a5edc1a | `f5a9a1e` | Cohortes duplicadas |
+| 5645ec4 | `2ea6d9c` | Límite de intentos |
+| 9cb4deb | `287411d` | nodemailer |
+| b94d50e | `0de7780` | Documentación de la fase |
+| a063c9b | `cd79feb` | Capturas enmascaradas |
+| e2465f6 | `846ffe5` | Lista de commits |

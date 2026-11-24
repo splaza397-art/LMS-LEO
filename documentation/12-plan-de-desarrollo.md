@@ -26,8 +26,8 @@ Este plan reemplaza al de la sección 9 de la [auditoría](10-auditoria-tecnica.
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1 | Auditoría y diagnóstico | Terminada ([10-auditoria-tecnica.md](10-auditoria-tecnica.md)) |
-| **1.5** | **Estabilización y seguridad:** Git; cohortes duplicadas (I1); límite de intentos (S1); `nodemailer` (S2) | Terminada, pendiente de tu revisión ([11-estabilizacion-pre-refactorizacion.md](11-estabilizacion-pre-refactorizacion.md)) |
-| 2 | Backend: 12 módulos, controladores, servicios y repositorios SQL separados. Paginación, búsqueda, filtrado, ordenamiento controlado y límites máximos, con compatibilidad total | Pendiente |
+| **1.5** | **Estabilización y seguridad:** Git; cohortes duplicadas (I1); límite de intentos (S1); `nodemailer` (S2) | Terminada e integrada en `main` (24/11/2026), con limpieza de datos personales del historial ([11-estabilizacion-pre-refactorizacion.md](11-estabilizacion-pre-refactorizacion.md)) |
+| 2 | Backend (rama `refactor/backend-modular-architecture`): 12 módulos, controladores, servicios y repositorios SQL separados. Paginación, búsqueda, filtrado, ordenamiento controlado y límites máximos, con compatibilidad total | Pendiente |
 | 3 | Frontend: dividir `admin-panel.tsx` y `portal-forms.tsx`, organizar por funcionalidad, tablas paginadas, estados de carga y error. Misma identidad visual | Pendiente |
 | 4 | Android: dividir `AppRoot.kt` con MVVM; pantallas y navegación separadas; pruebas de ViewModels, repositorios y Compose; revisar los 35 avisos de lint; compilar el APK. Prueba en teléfono físico cuando esté disponible | Pendiente |
 | 5 | Integraciones y seguridad: revisión integral de Moodle y Keycloak, permisos, auditoría de la sincronización, sesiones y cuentas administrativas | Pendiente |
