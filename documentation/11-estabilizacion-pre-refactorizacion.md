@@ -152,6 +152,11 @@ Las pruebas nuevas se ejecutaron primero contra el código sin corregir:
 
 ## 10. Riesgos pendientes
 
+0. **Datos personales en el historial de Git (local, sin publicar).**
+   - **Qué pasó:** la captura de evidencia `40-panel-profesor.png` mostraba a una persona real (nombre completo y correo de una cuenta de Gmail que estaba matriculada en Base de Datos durante las pruebas de roles). Esa captura quedó en los commits `b5706d6` y `b94d50e`. Ningún commit se ha subido a ningún servidor, y el `.zip` entregado antes no la contiene.
+   - **Corrección:** las capturas ahora ocultan con `mask` toda fila que tenga un correo distinto de `@iinicia.test` (`privacyMask()` en `e2e/tests/helpers.ts`), y la captura se regeneró.
+   - **Pendiente:** las versiones anteriores siguen en esos dos commits. Para borrarlas del historial hay que reescribirlo, lo que cambia los identificadores de los commits. Requiere tu autorización y debe hacerse antes de subir el repositorio a cualquier servidor.
+
 1. **Producción necesita Nginx bien configurado:**
    - Nginx debe escribir `X-Forwarded-For`.
    - El portal no debe ser accesible directamente.

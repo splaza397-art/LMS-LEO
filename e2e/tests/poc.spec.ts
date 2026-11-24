@@ -3,12 +3,13 @@ import { expect, test, type Page } from "@playwright/test";
 import { config } from "dotenv";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { privacyMask } from "./helpers";
 
 config({ path: resolve(__dirname, "../../backend/.env"), quiet: true });
 const PASSWORD = process.env.DEMO_PASSWORD!;
 const SHOTS = resolve(__dirname, "../../documentation/evidencias/capturas");
 mkdirSync(SHOTS, { recursive: true });
-const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true, mask: privacyMask(page) });
 
 async function keycloakLogin(page: Page, email: string, password = PASSWORD) {
   await page.waitForURL(/localhost:8180/);
