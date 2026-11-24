@@ -7,3 +7,4 @@ $string['identityconflict'] = 'El correo ya pertenece a otra identidad IINICIA.'
 $string['issuernotconfigured'] = 'El proveedor de identidad IINICIA no está configurado.';
 $string['manualenrolmissing'] = 'El curso no tiene una instancia de matriculación manual.';
 $string['privacy:metadata'] = 'El plugin no guarda datos personales propios; usa los registros de usuario, matrícula y acceso vinculado de Moodle.';
+$string['locktimeout'] = 'Otra sincronización del mismo recurso sigue en curso ({$a}). Se reintentará.';

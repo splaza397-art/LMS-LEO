@@ -30,28 +30,40 @@ class set_cohort_member extends external_api {
         require_capability('local/iinicia:syncidentity', $system);
         $DB->get_record('user', ['id' => $p['userid'], 'deleted' => 0], 'id', MUST_EXIST);
 
-        $cohort = $DB->get_record('cohort', ['idnumber' => $p['idnumber'], 'contextid' => $system->id]);
+        // Buscar o crear bajo bloqueo por idnumber: sin el, dos llamadas simultaneas creaban dos cohortes
+        // (defecto I1 de la auditoria). Moodle no exige que idnumber sea unico, por eso el bloqueo es necesario.
+        $cohortid = \local_iinicia\lock::run('cohort_' . $p['idnumber'], function () use ($p, $system) {
+            return self::find_or_create($p['idnumber'], $p['name'], $system->id, $p['userid'], $p['active']);
+        });
+        return ['cohortid' => $cohortid];
+    }
+
+    /** Si ya existieran duplicados de antes de la correccion, se usa siempre la cohorte mas antigua. */
+    private static function find_or_create(string $idnumber, string $name, int $contextid, int $userid, bool $active): int {
+        global $DB;
+        $found = $DB->get_records('cohort', ['idnumber' => $idnumber, 'contextid' => $contextid], 'id ASC', '*', 0, 1);
+        $cohort = $found ? reset($found) : null;
         if (!$cohort) {
             $cohort = (object) [
-                'contextid' => $system->id,
-                'name' => $p['name'],
-                'idnumber' => $p['idnumber'],
+                'contextid' => $contextid,
+                'name' => $name,
+                'idnumber' => $idnumber,
                 'description' => '',
                 'descriptionformat' => FORMAT_HTML,
                 'component' => 'local_iinicia',
             ];
             $cohort->id = cohort_add_cohort($cohort);
-        } else if ($cohort->name !== $p['name']) {
-            $cohort->name = $p['name'];
+        } else if ($cohort->name !== $name) {
+            $cohort->name = $name;
             cohort_update_cohort($cohort);
         }
 
-        if ($p['active']) {
-            cohort_add_member($cohort->id, $p['userid']);
+        if ($active) {
+            cohort_add_member($cohort->id, $userid);
         } else {
-            cohort_remove_member($cohort->id, $p['userid']);
+            cohort_remove_member($cohort->id, $userid);
         }
-        return ['cohortid' => (int) $cohort->id];
+        return (int) $cohort->id;
     }
 
     public static function execute_returns(): external_single_structure {

@@ -10,7 +10,17 @@ interface SyncRow extends Record<string, unknown> {
   status: string; moodle_user_id: string | null;
 }
 
-/** Sincronizacion idempotente con Moodle. Si el LMS falla, queda pendiente y se reintenta. */
+/** Espera maxima de una solicitud (admision, cambio de rol) por la sincronizacion en curso de la misma persona. */
+const LOCK_WAIT_MS = 30_000;
+/** Espera progresiva entre reintentos: 1, 2, 4, 8... minutos, con tope de 1 hora. */
+const MAX_BACKOFF_MINUTES = 60;
+
+/**
+ * Sincronizacion idempotente con Moodle. Si el LMS falla, queda pendiente y se reintenta.
+ *
+ * Una sola sincronizacion por persona a la vez, aunque haya varias instancias del backend: el bloqueo es un
+ * bloqueo consultivo de PostgreSQL (defecto I1 de la auditoria). Moodle aplica ademas su propio bloqueo.
+ */
 @Injectable()
 export class SyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SyncService.name);
@@ -33,9 +43,13 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const rows = await this.db.query<{ id: string }>(
-        `SELECT id FROM users WHERE moodle_sync_status IN ('pending', 'error') ORDER BY updated_at LIMIT 25`,
+        `SELECT id FROM users
+          WHERE moodle_sync_status = 'pending'
+             OR (moodle_sync_status = 'error' AND (moodle_sync_next_at IS NULL OR moodle_sync_next_at <= now()))
+          ORDER BY updated_at LIMIT 25`,
       );
-      for (const row of rows) await this.syncUser(row.id);
+      // Sin espera: si otra solicitud o instancia ya sincroniza a esa persona, se omite en esta vuelta.
+      for (const row of rows) await this.syncUser(row.id, { wait: false });
     } catch (error) {
       this.logger.error(`Reintento fallido: ${(error as Error).message}`);
     } finally {
@@ -43,8 +57,20 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Devuelve true si Moodle quedo consistente con el portal. */
-  async syncUser(userId: string): Promise<boolean> {
+  /**
+   * Devuelve true si Moodle quedo consistente con el portal. Con wait = false no espera a una sincronizacion
+   * en curso de la misma persona (la usa el reintento automatico).
+   */
+  async syncUser(userId: string, { wait = true }: { wait?: boolean } = {}): Promise<boolean> {
+    const outcome = await this.db.withLock(`moodle-sync:${userId}`, wait ? LOCK_WAIT_MS : 0, () => this.syncLocked(userId));
+    if (!outcome.acquired) {
+      if (wait) this.logger.warn(`Sincronizacion de ${userId} sigue en curso en otro proceso; queda para el reintento`);
+      return false;
+    }
+    return outcome.result;
+  }
+
+  private async syncLocked(userId: string): Promise<boolean> {
     const user = await this.db.one<SyncRow>(
       `SELECT id, oidc_sub, email, first_name, last_name, status, moodle_user_id FROM users WHERE id = $1`, [userId],
     );
@@ -99,6 +125,7 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
         await client.query(`UPDATE enrolments SET status = 'active', updated_at = now() WHERE user_id = $1 AND status = 'pending'`, [userId]);
         await client.query(
           `UPDATE users SET moodle_user_id = $2, moodle_sync_status = 'synced', moodle_sync_error = NULL, moodle_synced_at = now(),
+                  moodle_sync_attempts = 0, moodle_sync_next_at = NULL,
                   status = CASE WHEN status = 'admitido' THEN 'activo' ELSE status END, updated_at = now()
             WHERE id = $1`,
           [userId, result.moodleuserid],
@@ -111,10 +138,18 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
       return true;
     } catch (error) {
       const message = (error as Error).message.slice(0, 300);
-      await this.db.query(
-        `UPDATE users SET moodle_sync_status = 'error', moodle_sync_error = $2, updated_at = now() WHERE id = $1`, [userId, message],
+      const row = await this.db.one<{ attempts: number }>(
+        `UPDATE users SET moodle_sync_status = 'error', moodle_sync_error = $2, updated_at = now(),
+                moodle_sync_attempts = moodle_sync_attempts + 1,
+                moodle_sync_next_at = now() + least(interval '1 minute' * power(2, moodle_sync_attempts), interval '1 minute' * $3)
+          WHERE id = $1 RETURNING moodle_sync_attempts AS attempts`,
+        [userId, message, MAX_BACKOFF_MINUTES],
       );
-      this.logger.warn(`Sincronizacion pendiente para ${userId}: ${message}`);
+      await this.audit.log({
+        action: 'moodle.sync_failed', targetType: 'user', targetId: userId,
+        detail: { attempt: row?.attempts ?? null, error: message },
+      }).catch(() => undefined);
+      this.logger.warn(`Sincronizacion pendiente para ${userId} (intento ${row?.attempts ?? '?'}): ${message}`);
       return false;
     }
   }

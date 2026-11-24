@@ -48,84 +48,93 @@ class upsert_user extends external_api {
         $sub = strtolower($p['oidcsub']);
         $email = strtolower($p['email']);
 
-        $tx = $DB->start_delegated_transaction();
-        $where = ['idnumber' => $uuid, 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id];
-        $user = $DB->get_record('user', $where);
-        if (!$user) {
-            $link = oauth_api::match_username_to_user($sub, $issuer);
-            if ($link) {
-                $user = $DB->get_record('user', ['id' => $link->get('userid'), 'deleted' => 0]);
-            }
-        }
-        if (!$user) {
-            $user = $DB->get_record_select(
-                'user',
-                'LOWER(email) = :email AND deleted = 0 AND mnethostid = :host',
-                ['email' => $email, 'host' => $CFG->mnet_localhost_id],
-                '*',
-                IGNORE_MULTIPLE
-            ) ?: null;
-        }
-        if ($user && $user->idnumber !== '' && $user->idnumber !== $uuid) {
-            throw new \moodle_exception('identityconflict', 'local_iinicia');
-        }
-
-        $created = false;
-        if (!$user) {
-            $new = (object) [
-                'auth' => 'oauth2',
-                'confirmed' => 1,
-                'mnethostid' => $CFG->mnet_localhost_id,
-                'username' => 'iin_' . str_replace('-', '', $uuid),
-                'password' => AUTH_PASSWORD_NOT_CACHED,
-                'idnumber' => $uuid,
-                'email' => $email,
-                'firstname' => $p['firstname'],
-                'lastname' => $p['lastname'],
-                'suspended' => (int) $p['suspended'],
-                'lang' => 'es',
-            ];
-            $id = user_create_user($new, false, false);
-            $user = $DB->get_record('user', ['id' => $id], '*', MUST_EXIST);
-            $created = true;
-        } else {
-            $changes = ['id' => $user->id];
-            $desired = [
-                'idnumber' => $uuid,
-                'email' => $email,
-                'firstname' => $p['firstname'],
-                'lastname' => $p['lastname'],
-                'suspended' => (int) $p['suspended'],
-            ];
-            foreach ($desired as $field => $value) {
-                if ((string) $user->$field !== (string) $value) {
-                    $changes[$field] = $value;
+        // Dos sincronizaciones simultaneas de la misma persona se ejecutan en serie: la segunda encuentra
+        // la cuenta que creo la primera en lugar de intentar crearla otra vez.
+        [$user, $created] = \local_iinicia\lock::run('user_' . $uuid, function () use ($DB, $CFG, $p, $uuid, $sub, $email, $issuer) {
+            $tx = $DB->start_delegated_transaction();
+            try {
+                $where = ['idnumber' => $uuid, 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id];
+                $user = $DB->get_record('user', $where);
+                if (!$user) {
+                    $link = oauth_api::match_username_to_user($sub, $issuer);
+                    if ($link) {
+                        $user = $DB->get_record('user', ['id' => $link->get('userid'), 'deleted' => 0]);
+                    }
                 }
-            }
-            if (count($changes) > 1) {
-                user_update_user((object) $changes, false, false);
-            }
-        }
+                if (!$user) {
+                    $user = $DB->get_record_select(
+                        'user',
+                        'LOWER(email) = :email AND deleted = 0 AND mnethostid = :host',
+                        ['email' => $email, 'host' => $CFG->mnet_localhost_id],
+                        '*',
+                        IGNORE_MULTIPLE
+                    ) ?: null;
+                }
+                if ($user && $user->idnumber !== '' && $user->idnumber !== $uuid) {
+                    throw new \moodle_exception('identityconflict', 'local_iinicia');
+                }
 
-        $existing = oauth_api::match_username_to_user($sub, $issuer);
-        if ($existing && (int) $existing->get('userid') !== (int) $user->id) {
-            $existing->set('userid', $user->id);
-            $existing->update();
-        } else if ($existing && $existing->get('confirmtoken') !== '') {
-            $existing->set('confirmtoken', '');
-            $existing->update();
-        } else if (!$existing) {
-            $record = (object) [
-                'issuerid' => $issuer->get('id'),
-                'username' => $sub,
-                'userid' => $user->id,
-                'email' => $email,
-                'confirmtoken' => '',
-                'confirmtokenexpires' => 0,
-            ];
-            (new linked_login(0, $record))->create();
-        }
-        $tx->allow_commit();
+                $created = false;
+                if (!$user) {
+                    $new = (object) [
+                        'auth' => 'oauth2',
+                        'confirmed' => 1,
+                        'mnethostid' => $CFG->mnet_localhost_id,
+                        'username' => 'iin_' . str_replace('-', '', $uuid),
+                        'password' => AUTH_PASSWORD_NOT_CACHED,
+                        'idnumber' => $uuid,
+                        'email' => $email,
+                        'firstname' => $p['firstname'],
+                        'lastname' => $p['lastname'],
+                        'suspended' => (int) $p['suspended'],
+                        'lang' => 'es',
+                    ];
+                    $id = user_create_user($new, false, false);
+                    $user = $DB->get_record('user', ['id' => $id], '*', MUST_EXIST);
+                    $created = true;
+                } else {
+                    $changes = ['id' => $user->id];
+                    $desired = [
+                        'idnumber' => $uuid,
+                        'email' => $email,
+                        'firstname' => $p['firstname'],
+                        'lastname' => $p['lastname'],
+                        'suspended' => (int) $p['suspended'],
+                    ];
+                    foreach ($desired as $field => $value) {
+                        if ((string) $user->$field !== (string) $value) {
+                            $changes[$field] = $value;
+                        }
+                    }
+                    if (count($changes) > 1) {
+                        user_update_user((object) $changes, false, false);
+                    }
+                }
+
+                $existing = oauth_api::match_username_to_user($sub, $issuer);
+                if ($existing && (int) $existing->get('userid') !== (int) $user->id) {
+                    $existing->set('userid', $user->id);
+                    $existing->update();
+                } else if ($existing && $existing->get('confirmtoken') !== '') {
+                    $existing->set('confirmtoken', '');
+                    $existing->update();
+                } else if (!$existing) {
+                    $record = (object) [
+                        'issuerid' => $issuer->get('id'),
+                        'username' => $sub,
+                        'userid' => $user->id,
+                        'email' => $email,
+                        'confirmtoken' => '',
+                        'confirmtokenexpires' => 0,
+                    ];
+                    (new linked_login(0, $record))->create();
+                }
+                $tx->allow_commit();
+                return [$user, $created];
+            } catch (\Throwable $e) {
+                $tx->rollback($e);
+            }
+        });
 
         if ($p['suspended']) {
             \core\session\manager::destroy_user_sessions($user->id);
