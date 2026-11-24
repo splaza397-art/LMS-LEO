@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Markdown } from "./markdown";
+import { Markdown } from "@/features/content/markdown";
 import { bff } from "./portal-forms";
 
 const STATUS_LABELS: Record<string, string> = { aspirante: "Aspirante", admitido: "Admitido", activo: "Activo", suspendido: "Suspendido" };
