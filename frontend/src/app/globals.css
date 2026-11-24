@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn, .btn-primary, .btn-outline, .btn-danger { @apply inline-flex min-h-11 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply bg-blue-700 text-white hover:bg-blue-800; }
+  .btn-outline { @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-100; }
+  .btn-danger { @apply border border-red-300 bg-white text-red-700 hover:bg-red-50; }
+  .card { @apply rounded-xl border border-slate-200 bg-white p-5 sm:p-6; }
+  .input { @apply min-h-11 w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900; }
+  .label { @apply mb-1 block text-sm font-medium text-slate-800; }
+  .page { @apply mx-auto w-full max-w-6xl px-4 py-10 sm:px-8 sm:py-14; }
+  .h1 { @apply text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl; }
+  .h2 { @apply text-xl font-bold text-slate-900 sm:text-2xl; }
+  .muted { @apply text-slate-600; }
+  .badge { @apply inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-800; }
+}

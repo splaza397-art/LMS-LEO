@@ -1,0 +1,14 @@
+{
+  "name": "iinicia-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.56.0",
+    "autocannon": "^8.0.0",
+    "dotenv": "^17.2.3"
+  }
+}

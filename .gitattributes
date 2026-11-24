@@ -1,0 +1,13 @@
+# Finales de línea LF en todo el repositorio: los scripts .sh y gradlew corren dentro de Linux (Docker).
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.pdf binary

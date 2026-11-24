@@ -1,0 +1,173 @@
+{
+  "realm": "iinicia",
+  "displayName": "IINICIA",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "passwordPolicy": "length(10) and upperCase(1) and lowerCase(1) and digits(1) and notUsername(undefined)",
+  "defaultLocale": "es",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "es"
+  ],
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-responder@iinicia.local",
+    "fromDisplayName": "IINICIA"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "superadmin",
+        "description": "Superadministrador"
+      },
+      {
+        "name": "admin_tecnico",
+        "description": "Administrador tecnico"
+      },
+      {
+        "name": "admin_academico",
+        "description": "Administrador academico"
+      },
+      {
+        "name": "coordinador",
+        "description": "Coordinador"
+      },
+      {
+        "name": "profesor",
+        "description": "Profesor"
+      },
+      {
+        "name": "estudiante",
+        "description": "Estudiante"
+      },
+      {
+        "name": "aspirante",
+        "description": "Aspirante"
+      },
+      {
+        "name": "soporte",
+        "description": "Soporte"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "iinicia-portal",
+      "name": "Portal IINICIA",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KC_PORTAL_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "${PORTAL_PUBLIC_URL}/auth/callback",
+        "${PORTAL_PUBLIC_URL}/mi-iinicia"
+      ],
+      "webOrigins": [
+        "${PORTAL_PUBLIC_URL}"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${PORTAL_PUBLIC_URL}/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "iinicia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "baseUrl": "${PORTAL_PUBLIC_URL}/mi-iinicia"
+    },
+    {
+      "clientId": "iinicia-android",
+      "name": "App Android IINICIA",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "org.iinicia.app:/oauth2redirect"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "org.iinicia.app:/logout"
+      },
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "iinicia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "iinicia-moodle",
+      "name": "Moodle LMS",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KC_MOODLE_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "${MOODLE_PUBLIC_URL}/admin/oauth2callback.php"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "post.logout.redirect.uris": "${MOODLE_PUBLIC_URL}/*"
+      }
+    },
+    {
+      "clientId": "iinicia-backend",
+      "name": "Backend IINICIA",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KC_BACKEND_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-iinicia-backend",
+      "enabled": true,
+      "serviceAccountClientId": "iinicia-backend",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
+    }
+  ],
+  "loginTheme": "iinicia",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>IINICIA</span></div>",
+  "emailTheme": "iinicia"
+}

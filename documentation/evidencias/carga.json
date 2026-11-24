@@ -1,0 +1,39 @@
+{
+  "fecha": "2026-11-24T04:10:14.301Z",
+  "entorno": "PC local con todos los servicios",
+  "results": [
+    {
+      "ruta": "/",
+      "conexiones": 25,
+      "segundos": 15,
+      "peticiones": 585,
+      "porSegundo": 39,
+      "latenciaP50ms": 572,
+      "latenciaP99ms": 1265,
+      "errores": 0,
+      "no2xx": 0
+    },
+    {
+      "ruta": "/oferta",
+      "conexiones": 25,
+      "segundos": 15,
+      "peticiones": 885,
+      "porSegundo": 59,
+      "latenciaP50ms": 380,
+      "latenciaP99ms": 686,
+      "errores": 0,
+      "no2xx": 0
+    },
+    {
+      "ruta": "/noticias",
+      "conexiones": 25,
+      "segundos": 15,
+      "peticiones": 751,
+      "porSegundo": 50,
+      "latenciaP50ms": 489,
+      "latenciaP99ms": 854,
+      "errores": 0,
+      "no2xx": 0
+    }
+  ]
+}

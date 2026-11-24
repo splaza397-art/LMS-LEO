@@ -1,0 +1,34 @@
+{
+  "fecha": "2026-11-24T14:00:00.426Z",
+  "archivos": {
+    "portal.dump": 2452793,
+    "moodle.dump": 1990206,
+    "keycloak.dump": 231334,
+    "moodledata.tar.gz": 5382944
+  },
+  "conteos": {
+    "portal.users": 9,
+    "portal.programs": 4,
+    "portal.enrolments": 3,
+    "portal.content_items": 7,
+    "portal.audit_log": 237,
+    "moodle.mdl_user": 29,
+    "moodle.mdl_course": 3,
+    "moodle.mdl_user_enrolments": 3,
+    "keycloak.user_entity": 11,
+    "keycloak.client": 17
+  },
+  "verificacion": {
+    "portal.users": "ok",
+    "portal.programs": "ok",
+    "portal.enrolments": "ok",
+    "portal.content_items": "ok",
+    "portal.audit_log": "ok",
+    "moodle.mdl_user": "ok",
+    "moodle.mdl_course": "ok",
+    "moodle.mdl_user_enrolments": "ok",
+    "keycloak.user_entity": "ok",
+    "keycloak.client": "ok",
+    "moodledata.archivos": "ok (2111 entradas)"
+  }
+}

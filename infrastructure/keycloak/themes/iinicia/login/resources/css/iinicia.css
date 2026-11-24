@@ -1,0 +1,46 @@
+/* Identidad IINICIA sobre el tema keycloak.v2 (mismos colores que portal, Moodle y Android). */
+:root {
+  --keycloak-logo-url: url('../img/logo-blanco.png');
+  --keycloak-bg-logo-url: none;
+  --keycloak-logo-height: 150px;
+  --keycloak-logo-width: 150px;
+  --keycloak-card-top-color: #00ace4;
+  --pf-v5-global--primary-color--100: #1d4ed8;
+  --pf-v5-global--primary-color--200: #1e40af;
+  --pf-v5-global--link--Color: #1d4ed8;
+  --pf-v5-global--link--Color--hover: #1e3a8a;
+}
+
+.login-pf body,
+body#keycloak-bg {
+  background: #172554;
+}
+
+#kc-header-wrapper {
+  padding-block: 8px;
+}
+
+.pf-v5-c-login__main {
+  border-radius: 12px;
+}
+
+:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+/* Enlaces de continuación en páginas informativas (confirmar correo, cuenta actualizada). */
+#kc-info-message .instruction { margin-bottom: 1rem; }
+a.iinicia-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+a.iinicia-action:hover { background: #1e40af; color: #ffffff; }

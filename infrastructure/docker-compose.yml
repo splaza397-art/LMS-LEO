@@ -1,0 +1,116 @@
+# IINICIA - entorno DEV. Ejecutar desde la raiz: docker compose -f infrastructure/docker-compose.yml --env-file infrastructure/.env up -d
+name: iinicia
+
+x-moodle-env: &moodle-env
+  MOODLE_WWWROOT: ${MOODLE_PUBLIC_URL}
+  MOODLE_DB_HOST: postgres
+  MOODLE_DB_NAME: moodle
+  MOODLE_DB_USER: moodle
+  MOODLE_DB_PASSWORD: ${MOODLE_DB_PASSWORD}
+  MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
+  MOODLE_WS_TOKEN: ${MOODLE_WS_TOKEN}
+  MOODLE_OIDC_CLIENT_SECRET: ${KC_MOODLE_CLIENT_SECRET}
+  KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL}
+  KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+  MOODLE_ALLOW_PRIVATE_HOSTS: "true"
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PORTAL_DB_PASSWORD: ${PORTAL_DB_PASSWORD}
+      MOODLE_DB_PASSWORD: ${MOODLE_DB_PASSWORD}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keycloak && pg_isready -U postgres -d moodle"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_PORTAL_CLIENT_SECRET: ${KC_PORTAL_CLIENT_SECRET}
+      KC_MOODLE_CLIENT_SECRET: ${KC_MOODLE_CLIENT_SECRET}
+      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET}
+      PORTAL_PUBLIC_URL: ${PORTAL_PUBLIC_URL}
+      MOODLE_PUBLIC_URL: ${MOODLE_PUBLIC_URL}
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+      - ./keycloak/themes/iinicia:/opt/keycloak/themes/iinicia:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  moodle:
+    build:
+      context: ..
+      dockerfile: infrastructure/moodle/Dockerfile
+    image: iinicia/moodle:5.3.1
+    restart: unless-stopped
+    environment: *moodle-env
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - moodle_data:/var/www/moodledata
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/www/moodledata/.iinicia-ready && curl -fsS -o /dev/null http://127.0.0.1/login/index.php"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 180s
+
+  moodle-cron:
+    image: iinicia/moodle:5.3.1
+    restart: unless-stopped
+    environment: *moodle-env
+    entrypoint: ["/usr/local/bin/iinicia-cron.sh"]
+    volumes:
+      - moodle_data:/var/www/moodledata
+    depends_on:
+      moodle:
+        condition: service_healthy
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
+volumes:
+  postgres_data:
+  moodle_data:

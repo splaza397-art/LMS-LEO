@@ -1,0 +1,55 @@
+# --- Dependencias y compilados ---
+node_modules/
+dist/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Android / Gradle / IDE ---
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties
+captures/
+.cxx/
+.externalNativeBuild/
+
+# --- Secretos: nunca en el repositorio ---
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+keystore.properties
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+google-services.json
+
+# --- Respaldos y volcados (contienen datos personales) ---
+backups/
+*.dump
+*.sql.gz
+*.tar.gz
+
+# --- Resultados de pruebas ---
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/playwright/.cache/
+documentation/evidencias/reporte-e2e/
+
+# --- Temporales y sistema ---
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+tmp/
