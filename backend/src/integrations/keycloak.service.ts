@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { requiresMfa } from '../auth/permissions';
+import { requiresMfa } from '../modules/auth/permissions';
 import { config } from '../config';
 
 const { url, realm, clientId, clientSecret } = config.keycloak;

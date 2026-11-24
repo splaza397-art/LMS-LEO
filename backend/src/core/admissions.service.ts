@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuthUser } from '../auth/auth.guard';
-import { isProgramScoped, Permission } from '../auth/permissions';
+import { AuthUser } from '../modules/auth/auth.decorators';
+import { isProgramScoped, Permission } from '../modules/auth/permissions';
 import { DbService } from '../db/db.service';
 import { KeycloakService } from '../integrations/keycloak.service';
-import { AuditService } from './audit.service';
+import { AuditService } from '../modules/audit/audit.service';
 import { NotificationsService } from './notifications.service';
 import { SyncService } from './sync.service';
 

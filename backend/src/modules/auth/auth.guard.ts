@@ -1,29 +1,10 @@
-import {
-  CanActivate, createParamDecorator, ExecutionContext, ForbiddenException, Injectable,
-  SetMetadata, UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { config } from '../config';
-import { DbService } from '../db/db.service';
+import { config } from '../../config';
+import { DbService } from '../../db/db.service';
+import { AuthUser, PERMISSION_KEY, PUBLIC_KEY } from './auth.decorators';
 import { hasPermission, Permission } from './permissions';
-
-export interface AuthUser {
-  id: string;
-  sub: string;
-  email: string;
-  status: string;
-  roles: string[];
-  programIds: string[];
-}
-
-const PUBLIC_KEY = 'iinicia:public';
-const PERMISSION_KEY = 'iinicia:permission';
-export const Public = () => SetMetadata(PUBLIC_KEY, true);
-export const RequirePermission = (permission: Permission) => SetMetadata(PERMISSION_KEY, permission);
-export const CurrentUser = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest().user,
-);
 
 const issuer = `${config.keycloak.url}/realms/${config.keycloak.realm}`;
 const jwks = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`));

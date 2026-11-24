@@ -1,11 +1,11 @@
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Put, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { AuthUser, CurrentUser, RequirePermission } from '../auth/auth.guard';
-import { isProgramScoped } from '../auth/permissions';
+import { AuthUser, CurrentUser, RequirePermission } from '../modules/auth/auth.decorators';
+import { isProgramScoped } from '../modules/auth/permissions';
 import { AccountsService } from '../core/accounts.service';
 import { AdmissionsService } from '../core/admissions.service';
-import { AuditService } from '../core/audit.service';
+import { AuditService } from '../modules/audit/audit.service';
 import { NotificationsService } from '../core/notifications.service';
 import { SyncService } from '../core/sync.service';
 import { DbService } from '../db/db.service';

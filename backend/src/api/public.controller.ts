@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, NotFoundException, Param, ParseUUIDPip
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { Public } from '../auth/auth.guard';
+import { Public } from '../modules/auth/auth.decorators';
 import { AccountsService } from '../core/accounts.service';
 import { DbService } from '../db/db.service';
 import { KeycloakService } from '../integrations/keycloak.service';

@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Role } from './auth/permissions';
+import { Role } from './modules/auth/permissions';
 import { config } from './config';
 import { AccountsService } from './core/accounts.service';
 import { SyncService } from './core/sync.service';

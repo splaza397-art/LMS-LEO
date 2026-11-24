@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { hasPermission, isProgramScoped, PERMISSIONS, permissionsFor, requiresMfa, ROLES } from '../src/auth/permissions';
+import { hasPermission, isProgramScoped, PERMISSIONS, permissionsFor, requiresMfa, ROLES } from '../src/modules/auth/permissions';
 
 describe('matriz RBAC', () => {
   it('solo usa roles definidos', () => {

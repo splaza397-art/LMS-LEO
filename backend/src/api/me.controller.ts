@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { AuthUser, CurrentUser, RequirePermission } from '../auth/auth.guard';
-import { hasPermission, permissionsFor } from '../auth/permissions';
+import { AuthUser, CurrentUser, RequirePermission } from '../modules/auth/auth.decorators';
+import { hasPermission, permissionsFor } from '../modules/auth/permissions';
 import { config } from '../config';
 import { AccountsService } from '../core/accounts.service';
 import { AdmissionsService } from '../core/admissions.service';

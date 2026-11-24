@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 import { MoodleService } from '../integrations/moodle.service';
-import { AuditService } from './audit.service';
+import { AuditService } from '../modules/audit/audit.service';
 
 const MOODLE_MANAGER_ROLES = new Set(['superadmin', 'admin_academico']);
 

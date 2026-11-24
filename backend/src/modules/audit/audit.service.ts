@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DbService, Queryable } from '../db/db.service';
+import { DbService, Queryable } from '../../db/db.service';
 
 export interface AuditEntry {
   actorId?: string | null;
