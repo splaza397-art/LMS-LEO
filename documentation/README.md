@@ -16,6 +16,8 @@ Plataforma que sustituye el portal WordPress de IINICIA (Instituto de Innovació
 | [10 · Auditoría técnica](10-auditoria-tecnica.md) | Equipo técnico | Diagnóstico de la Fase 1: problemas confirmados, recomendaciones y no verificados |
 | [11 · Estabilización pre-refactorización](11-estabilizacion-pre-refactorizacion.md) | Equipo técnico | Fase 1.5: Git, cohortes duplicadas, límite de intentos, dependencias; resultados y recuperación |
 | [12 · Plan de desarrollo](12-plan-de-desarrollo.md) | Equipo técnico, dirección | Fases 2 a 8, diseño de los 12 módulos del backend y requisitos de calificaciones (Fase 5.5) |
+| [13 · Refactorización del backend](13-refactorizacion-backend.md) | Equipo técnico | Fase 2: 12 módulos, endpoints antes y después, paginación, seguridad, pruebas y recuperación |
+| [API: inventario de endpoints](api/inventario-endpoints.md) | Equipo técnico, integradores | Los 52 endpoints con permiso, código, límite y parámetros (generado desde el código) |
 
 Material complementario:
 

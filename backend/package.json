@@ -10,7 +10,9 @@
     "test": "node --test --import tsx test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "migrate:wordpress": "node dist/migrate-wordpress.js",
-    "test:integration": "node --test --import tsx test/integration/*.test.ts"
+    "test:integration": "node --test --import tsx test/integration/*.test.ts",
+    "inventory": "nest build && node dist/tools/inventory.cli.js",
+    "test:contracts": "nest build && node --test \"test/contracts/*.test.mjs\""
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
