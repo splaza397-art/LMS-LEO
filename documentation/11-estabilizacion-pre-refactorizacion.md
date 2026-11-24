@@ -148,7 +148,8 @@ Las pruebas nuevas se ejecutaron primero contra el código sin corregir:
 | `a5edc1a` | `fix(sync): prevent duplicate Moodle cohorts under concurrent synchronization` |
 | `5645ec4` | `fix(security): stop X-Forwarded-For spoofing from bypassing rate limits` |
 | `9cb4deb` | `chore(deps): remove unused nodemailer (high-severity advisories)` |
-| Siguiente commit | `docs: document phase 1.5 stabilization and updated development plan` (este documento, el plan y las capturas regeneradas por la corrida E2E) |
+| `b94d50e` | `docs: document phase 1.5 stabilization and updated development plan` |
+| `a063c9b` | `fix(e2e): mask real people in versioned evidence screenshots` |
 
 ## 10. Riesgos pendientes
 
