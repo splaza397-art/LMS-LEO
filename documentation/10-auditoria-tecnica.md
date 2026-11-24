@@ -199,6 +199,8 @@ Lo más importante que hay que atender:
 
 ## 9. Plan de refactorización propuesto
 
+> **Actualización:** este plan fue reemplazado por [12-plan-de-desarrollo.md](12-plan-de-desarrollo.md), que incorpora las fases 1.5 y 5.5. Los defectos I1, S1 y S2 se corrigieron en la Fase 1.5 ([11-estabilizacion-pre-refactorizacion.md](11-estabilizacion-pre-refactorizacion.md)).
+
 ### Criterios
 
 - Cada fase deja **todas las pruebas en verde** y los **mismos URL y endpoints** (`/api/v1`).
@@ -286,6 +288,8 @@ Lo más importante que hay que atender:
 ---
 
 ## 10. Decisiones que necesito antes de la Fase 2
+
+> **Resueltas el 24/11/2026:** Git autorizado; 12 módulos; `nodemailer` eliminado; calificaciones como Fase 5.5; I1 y S1 corregidos en la Fase 1.5.
 
 1. **Git.** El proyecto no está bajo control de versiones. Propongo `git init` y un primer commit con el estado actual antes de refactorizar, para poder volver atrás en cualquier fase. No se subiría a ningún servidor.
 2. **Módulos del backend.** ¿Uso los 12 propuestos o los 17 exactos de tu lista?

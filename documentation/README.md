@@ -13,6 +13,9 @@ Plataforma que sustituye el portal WordPress de IINICIA (Instituto de Innovació
 | [07 · Manual de administración](07-manual-administracion.md) | Área académica | Admisiones, programas, profesores, contenidos, reportes |
 | [08 · Manual de usuario](08-manual-usuario.md) | Aspirantes, estudiantes, profesores | Registro, Mi IINICIA, campus y app |
 | [09 · Pruebas y evidencias](09-pruebas-y-evidencias.md) | QA, dirección | Pruebas automáticas, resultados, criterios de aceptación |
+| [10 · Auditoría técnica](10-auditoria-tecnica.md) | Equipo técnico | Diagnóstico de la Fase 1: problemas confirmados, recomendaciones y no verificados |
+| [11 · Estabilización pre-refactorización](11-estabilizacion-pre-refactorizacion.md) | Equipo técnico | Fase 1.5: Git, cohortes duplicadas, límite de intentos, dependencias; resultados y recuperación |
+| [12 · Plan de desarrollo](12-plan-de-desarrollo.md) | Equipo técnico, dirección | Fases 2 a 8, diseño de los 12 módulos del backend y requisitos de calificaciones (Fase 5.5) |
 
 Material complementario:
 
