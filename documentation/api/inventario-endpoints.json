@@ -1,0 +1,635 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/estado",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/applications",
+    "permission": "applications:review",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": [
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/applications/:id/decision",
+    "permission": "applications:review",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "DecisionDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/audit",
+    "permission": "audit:read",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/content",
+    "permission": "content:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": [
+      "type"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/content",
+    "permission": "content:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "ContentDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/content/:id",
+    "permission": "content:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/content/:id",
+    "permission": "content:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "ContentDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/info-requests",
+    "permission": "info_requests:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/info-requests/:id",
+    "permission": "info_requests:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "InfoStatusDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/media",
+    "permission": "content:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/moodle/courses",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/notifications",
+    "permission": "notifications:send",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "BroadcastDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/programs",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/programs",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "ProgramDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/programs/:id",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "ProgramDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/programs/:id/cohorts",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "CohortDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/programs/:id/courses",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "ProgramCourseDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/programs/:id/courses/:courseId",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "courseId (ParseIntPipe)",
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/programs/:id/teachers",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/programs/:id/teachers",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "TeacherDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/reports",
+    "permission": "reports:read",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/stats",
+    "permission": "users:read",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/teachers",
+    "permission": "programs:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users",
+    "permission": "users:read",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": [
+      "q"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/:id/enrolment",
+    "permission": "enrolments:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "EnrolmentDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users/:id/enrolments",
+    "permission": "enrolments:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/users/:id/roles",
+    "permission": "roles:manage",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "RolesDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/:id/suspension",
+    "permission": "users:suspend",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "SuspendDto",
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/users/:id/sync",
+    "permission": "integrations:manage",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/register",
+    "permission": null,
+    "public": true,
+    "httpCode": 201,
+    "throttle": {
+      "limit": 5,
+      "ttl": 60000
+    },
+    "body": "RegisterDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/content/:type",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "type"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/content/:type/:slug",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "slug",
+      "type"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/info-requests",
+    "permission": null,
+    "public": true,
+    "httpCode": 201,
+    "throttle": {
+      "limit": 5,
+      "ttl": 60000
+    },
+    "body": "InfoRequestDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/me",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": "UpdateProfileDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/applications",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/me/applications",
+    "permission": "application:create",
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "ApplyDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/campus-link",
+    "permission": "campus:access",
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": [
+      "cmid",
+      "courseId"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/courses",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/courses/:id",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseIntPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/me/devices",
+    "permission": null,
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": "DeviceDto",
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/me/devices/:token",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "token"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/notifications",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/me/notifications/:id/read",
+    "permission": null,
+    "public": false,
+    "httpCode": 201,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/teaching",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/me/upcoming",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/media/:id",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "id (ParseUUIDPipe)"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/programs",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/programs/:slug",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [
+      "slug"
+    ],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/redirects",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sitemap-data",
+    "permission": null,
+    "public": true,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  }
+]
