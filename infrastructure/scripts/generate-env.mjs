@@ -45,9 +45,6 @@ const files = {
     KEYCLOAK_BACKEND_CLIENT_SECRET: s.KC_BACKEND_CLIENT_SECRET,
     MOODLE_URL: urls.MOODLE_PUBLIC_URL,
     MOODLE_WS_TOKEN: s.MOODLE_WS_TOKEN,
-    SMTP_HOST: 'localhost',
-    SMTP_PORT: 1025,
-    MAIL_FROM: 'IINICIA <no-responder@iinicia.local>',
     DEMO_PASSWORD: `Demo-${secret(6)}A1`,
     // DEV: las cuentas demo y las pruebas automaticas no tienen autenticador. En STAGING/PROD dejar en true.
     MFA_PRIVILEGED_ROLES: 'false',

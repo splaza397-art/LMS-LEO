@@ -30,9 +30,4 @@ export const config = {
   },
   /** MFA obligatoria para roles privilegiados. Solo se desactiva de forma explicita (entornos de prueba). */
   mfaPrivilegedRoles: process.env.MFA_PRIVILEGED_ROLES !== 'false',
-  mail: {
-    host: process.env.SMTP_HOST ?? 'localhost',
-    port: Number(process.env.SMTP_PORT ?? 1025),
-    from: process.env.MAIL_FROM ?? 'IINICIA <no-responder@iinicia.local>',
-  },
 };
