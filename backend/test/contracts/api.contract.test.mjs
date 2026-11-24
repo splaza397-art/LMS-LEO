@@ -67,8 +67,12 @@ describe('contrato OpenAPI (cuerpos de solicitud y esquemas)', () => {
       for (const [method, op] of Object.entries(ops)) {
         const now = api.paths[path]?.[method];
         assert.ok(now, `${method.toUpperCase()} ${path} desapareció del OpenAPI`);
+        // Sin obligaciones nuevas: todo parámetro obligatorio ahora ya lo era antes. Relajar un parámetro de
+        // consulta que estaba mal documentado como obligatorio es compatible; los de ruta deben seguir iguales.
         const required = (o) => (o.parameters ?? []).filter((p) => p.required).map((p) => `${p.in}:${p.name}`).sort();
-        assert.deepEqual(required(now), required(op), `${method} ${path}: parámetros obligatorios distintos`);
+        for (const r of required(now)) assert.ok(required(op).includes(r), `${method} ${path}: parámetro obligatorio nuevo ${r}`);
+        const pathParams = (o) => required(o).filter((r) => r.startsWith('path:'));
+        assert.deepEqual(pathParams(now), pathParams(op), `${method} ${path}: parámetros de ruta distintos`);
         const ref = (o) => o.requestBody?.content?.['application/json']?.schema?.$ref;
         assert.deepEqual(shape(schema(api, ref(now))), shape(schema(baselineApi, ref(op))), `${method} ${path}: esquema del cuerpo distinto`);
       }
