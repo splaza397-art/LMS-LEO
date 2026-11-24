@@ -1,11 +1,9 @@
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
-import { config } from '../config';
+import { config } from '../../config';
 
-export interface MoodleActivity { cmid: number; name: string; modname: string; url: string; duedate: number; completed: boolean }
-export interface MoodleSection { id: number; name: string; activities: MoodleActivity[] }
-export interface MoodleCourse {
-  id: number; fullname: string; shortname: string; summary: string; progress: number; url: string; sections: MoodleSection[];
-}
+import type { MoodleCourse } from './moodle.types';
+
+export type { MoodleActivity, MoodleCourse, MoodleSection } from './moodle.types';
 
 /** Unico punto de contacto con Moodle. El token nunca sale de este servicio ni se registra en logs. */
 @Injectable()

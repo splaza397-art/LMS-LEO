@@ -2,7 +2,7 @@
 // Uso: npm run migrate:wordpress
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { detectImage } from './api/image';
+import { detectImage } from './modules/content/image';
 import { AppModule } from './app.module';
 import { DEMO_CONTENT, DEMO_PROGRAM_SLUGS, PAGES, PROGRAMS, REDIRECTS } from './content/iinicia-wordpress';
 import { DbService } from './db/db.service';

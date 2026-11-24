@@ -4,11 +4,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Role } from './modules/auth/permissions';
 import { config } from './config';
-import { AccountsService } from './core/accounts.service';
-import { SyncService } from './core/sync.service';
+import { UsersService } from './modules/users/users.service';
+import { SyncService } from './modules/synchronization/sync.service';
 import { DbService } from './db/db.service';
-import { KeycloakService } from './integrations/keycloak.service';
-import { MoodleService } from './integrations/moodle.service';
+import { KeycloakService } from './integrations/keycloak/keycloak.service';
+import { MoodleService } from './integrations/moodle/moodle.service';
 
 const DEMO_USERS: { key: string; first: string; last: string; role: Role }[] = [
   { key: 'superadmin', first: 'Demo', last: 'Superadmin', role: 'superadmin' },
@@ -42,7 +42,7 @@ async function main() {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error', 'warn'] });
   await app.init();
   const db = app.get(DbService);
-  const accounts = app.get(AccountsService);
+  const accounts = app.get(UsersService);
   const keycloak = app.get(KeycloakService);
   const moodle = app.get(MoodleService);
   const sync = app.get(SyncService);

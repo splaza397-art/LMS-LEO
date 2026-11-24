@@ -28,6 +28,10 @@ export const config = {
     url: required('MOODLE_URL').replace(/\/$/, ''),
     token: required('MOODLE_WS_TOKEN'),
   },
+  /** Paginación de listas administrativas: tamaño máximo de página (entre 1 y 500; por omisión 100). */
+  pagination: {
+    maxPageSize: Math.min(500, Math.max(1, Number(process.env.PAGINATION_MAX_PAGE_SIZE ?? 100) || 100)),
+  },
   /** MFA obligatoria para roles privilegiados. Solo se desactiva de forma explicita (entornos de prueba). */
   mfaPrivilegedRoles: process.env.MFA_PRIVILEGED_ROLES !== 'false',
 };

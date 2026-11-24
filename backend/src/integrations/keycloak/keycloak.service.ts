@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { requiresMfa } from '../modules/auth/permissions';
-import { config } from '../config';
+import { requiresMfa } from '../../modules/auth/permissions';
+import { config } from '../../config';
 
 const { url, realm, clientId, clientSecret } = config.keycloak;
 const adminBase = `${url}/admin/realms/${realm}`;

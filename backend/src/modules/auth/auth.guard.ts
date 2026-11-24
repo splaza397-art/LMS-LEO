@@ -2,8 +2,8 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { Reflector } from '@nestjs/core';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { config } from '../../config';
-import { DbService } from '../../db/db.service';
-import { AuthUser, PERMISSION_KEY, PUBLIC_KEY } from './auth.decorators';
+import { UsersRepository } from '../users/users.repository';
+import { PERMISSION_KEY, PUBLIC_KEY } from './auth.decorators';
 import { hasPermission, Permission } from './permissions';
 
 const issuer = `${config.keycloak.url}/realms/${config.keycloak.realm}`;
@@ -15,7 +15,7 @@ const jwks = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector, private readonly db: DbService) {}
+  constructor(private readonly reflector: Reflector, private readonly users: UsersRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const targets = [context.getHandler(), context.getClass()];
@@ -37,14 +37,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Token inválido o expirado');
     }
 
-    const user = await this.db.one<AuthUser>(
-      `SELECT u.id, u.oidc_sub AS sub, u.email, u.status,
-              COALESCE(array_agg(DISTINCT r.role) FILTER (WHERE r.role IS NOT NULL), '{}') AS roles,
-              COALESCE(array_agg(DISTINCT r.program_id::text) FILTER (WHERE r.program_id IS NOT NULL), '{}') AS "programIds"
-         FROM users u LEFT JOIN user_roles r ON r.user_id = u.id
-        WHERE u.oidc_sub = $1 GROUP BY u.id`,
-      [sub],
-    );
+    const user = await this.users.findPrincipalBySub(sub);
     if (!user) throw new UnauthorizedException('Cuenta no registrada');
     if (user.status === 'suspendido') throw new ForbiddenException('Cuenta suspendida');
     request.user = user;

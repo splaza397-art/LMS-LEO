@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { DbService } from '../db/db.service';
+import { DbService } from '../../db/db.service';
 
-/**
- * Las notificaciones se guardan aqui y la app Android las consulta en segundo plano.
- * Para FCM basta enviar a la tabla devices dentro de create(); requiere un proyecto Firebase.
- */
+/** Dueño de notifications y devices. */
 @Injectable()
-export class NotificationsService {
+export class NotificationsRepository {
   constructor(private readonly db: DbService) {}
 
-  async create(userId: string, title: string, body: string, link?: string) {
+  create(userId: string, title: string, body: string, link: string | null) {
     return this.db.one(
       `INSERT INTO notifications (user_id, title, body, link) VALUES ($1, $2, $3, $4)
        RETURNING id, title, body, link, read_at AS "readAt", created_at AS "createdAt"`,
-      [userId, title, body, link ?? null],
+      [userId, title, body, link],
     );
   }
 
@@ -25,22 +22,19 @@ export class NotificationsService {
     );
   }
 
-  async markRead(userId: string, id: string) {
+  async markRead(userId: string, id: string): Promise<void> {
     await this.db.query(`UPDATE notifications SET read_at = COALESCE(read_at, now()) WHERE id = $1 AND user_id = $2`, [id, userId]);
-    return { ok: true };
   }
 
-  async registerDevice(userId: string, token: string, enabled: boolean) {
+  async upsertDevice(userId: string, token: string, enabled: boolean): Promise<void> {
     await this.db.query(
       `INSERT INTO devices (token, user_id, notifications_enabled) VALUES ($1, $2, $3)
        ON CONFLICT (token) DO UPDATE SET user_id = EXCLUDED.user_id, notifications_enabled = EXCLUDED.notifications_enabled, updated_at = now()`,
       [token, userId, enabled],
     );
-    return { ok: true };
   }
 
-  async removeDevice(userId: string, token: string) {
+  async removeDevice(userId: string, token: string): Promise<void> {
     await this.db.query(`DELETE FROM devices WHERE token = $1 AND user_id = $2`, [token, userId]);
-    return { ok: true };
   }
 }
