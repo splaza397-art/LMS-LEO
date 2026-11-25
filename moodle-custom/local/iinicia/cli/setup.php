@@ -93,6 +93,13 @@ foreach (['sub' => 'username', 'email' => 'email', 'given_name' => 'firstname', 
 }
 set_config('issuerid', $issuer->get('id'), 'local_iinicia');
 
+// Secreto compartido con el backend para firmar los comprobantes de entrada al campus (Fase 4.10).
+$ssosecret = (string) getenv('MOODLE_SSO_SECRET');
+if (strlen($ssosecret) < 32) {
+    cli_error('[iinicia] Falta MOODLE_SSO_SECRET (al menos 32 caracteres).');
+}
+set_config('ssosecret', $ssosecret, 'local_iinicia');
+
 // 3. Cuenta y rol de servicio con solo las capacidades necesarias.
 $system = context_system::instance();
 $svc = $DB->get_record('user', ['username' => 'iinicia_ws', 'deleted' => 0]);
