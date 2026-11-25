@@ -564,6 +564,17 @@
     "query": []
   },
   {
+    "method": "POST",
+    "path": "/api/v1/me/logout",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
+    "query": []
+  },
+  {
     "method": "GET",
     "path": "/api/v1/me/notifications",
     "permission": null,

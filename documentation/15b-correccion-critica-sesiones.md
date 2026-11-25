@@ -1,0 +1,400 @@
+# 15b · Fase 4.10: Corrección crítica de seguridad y sesiones
+
+Rama `fix/cross-account-session-isolation`, creada desde `7967b80` (Fase 4.9, en `refactor/android-modular-architecture`). Fecha: 25/11/2026.
+
+Es una corrección previa a la integración de la Fase 4 en `main`. No se integró en la rama de Android ni en `main`, y la Fase 5 no ha comenzado.
+
+## 1. Descripción del defecto
+
+En la Fase 4.9 se comprobó en un teléfono físico y en el portal que, tras cerrar la sesión de IINICIA y entrar con otra cuenta, **Moodle seguía abierto con la cuenta anterior**:
+
+1. El estudiante entra al campus.
+2. Cierra la sesión de IINICIA.
+3. Entra el profesor; Keycloak pide sus credenciales y la app o el portal muestran al profesor.
+4. "Entrar al Campus" abre Moodle como "Demo Estudiante", sin pedir nada.
+
+**Caso relacionado:** un cierre de sesión interrumpido en la app (el teléfono se bloqueó a la mitad) dejó viva la sesión del navegador en Keycloak. El siguiente "Iniciar sesión" entró sin credenciales a la cuenta anterior.
+
+## 2. Causa raíz
+
+- **El cierre de IINICIA no llegaba a Moodle.** Moodle tiene su propia sesión (`MoodleSession`) y nadie la cerraba.
+- **`local/iinicia/sso.php` reutilizaba cualquier sesión abierta.** Si `isloggedin()` era verdadero, redirigía al curso sin comprobar de quién era la sesión.
+- **El cierre en la app dependía del navegador.** Se hacía con una redirección a `end_session` de Keycloak en una pestaña. Si se interrumpía, la sesión del navegador seguía viva, y el siguiente inicio de sesión, sin `prompt=login`, entraba solo.
+
+## 3. Impacto potencial
+
+- En un equipo o teléfono compartido, una persona podía ver y modificar en Moodle los cursos, entregas, mensajes y calificaciones de otra.
+- Si la sesión residual era de un profesor o administrador, el acceso era a sus permisos.
+- **Severidad: crítica.** Se trata de acceso a recursos de otra cuenta.
+- No hay evidencia de que haya ocurrido fuera del entorno de desarrollo; la plataforma no está en producción.
+
+## 4. Escenarios afectados
+
+| Escenario | Antes de la corrección |
+|---|---|
+| Portal, mismo navegador: estudiante → profesor, profesor → estudiante, superadmin ↔ estudiante, estudiante A → estudiante B | Moodle quedaba con la cuenta anterior (5 de 5 fallaban) |
+| Enlace de campus de una cuenta abierto con la sesión de Moodle de otra, sin cerrar sesión | Entraba como la cuenta anterior |
+| Enlace del campus | Sin comprobante: cualquier enlace a `sso.php` servía |
+| App: cierre normal y cambio de cuenta | Moodle quedaba con la cuenta anterior (reproducido en el teléfono) |
+| App: cierre interrumpido (bloqueo, pérdida de conexión, proceso terminado) | El siguiente inicio entraba sin credenciales a la cuenta anterior |
+| Acceso directo a Moodle (marcador, historial, pestaña abierta, botón "Atrás") | Mostraba la sesión anterior |
+
+**Corrección sobre la Fase 4.9:** la reproducción en el portal que se describió en el documento 15 usaba `GET /auth/logout`, pero el cierre real del portal es un `POST` (botón "Salir"). En esta fase se repitió con el botón real; el defecto se confirmó (7 de 8 pruebas fallaron antes de la corrección; ver la sección 11).
+
+## 5. Arquitectura anterior de sesiones
+
+| Capa | Sesión | Cierre |
+|---|---|---|
+| Portal | Cookies httpOnly con tokens (BFF) | Borraba cookies y redirigía a `end_session` de Keycloak |
+| App | `AuthState` cifrado, refresh token *offline* | Revocaba el token y abría `end_session` en una pestaña |
+| Keycloak | Sesión del navegador (`KEYCLOAK_IDENTITY`) y sesiones *offline* | Solo con la redirección |
+| Moodle | `MoodleSession`, abierta por `auth_oauth2` | **Nunca** |
+| `sso.php` | Si había sesión, la reutilizaba; si no, mandaba a Keycloak | — |
+
+## 6. Arquitectura corregida
+
+1. **Entrada al campus con comprobante firmado.**
+   - El backend firma un comprobante de un solo uso para la persona autenticada.
+   - Moodle lo verifica y abre la sesión de esa persona exactamente.
+   - Si hay otra sesión abierta, se cierra primero.
+2. **Cierre coordinado en el servidor.** `POST /api/v1/me/logout` cierra la sesión de Keycloak y todas las de Moodle de esa persona desde el backend, sin depender del navegador.
+3. **Nada se da por cerrado sin confirmación.**
+   - Si Moodle no responde, el cierre queda pendiente en la base de datos y se reintenta.
+   - Si Keycloak no responde, el portal y la app lo saben y exigen credenciales en el siguiente inicio.
+4. **Siempre se piden credenciales.**
+   - La app usa `prompt=login`.
+   - El acceso directo a Moodle (`auth_oauth2`) también.
+   - El portal lo hace tras un cierre no confirmado.
+
+```
+App/Portal ──(token)──► Backend ──firma HMAC──► enlace sso.php?ticket=…
+                           │                         │
+                           │                         ▼
+                           │                Moodle verifica firma, vigencia,
+                           │                uso único e identidad; cierra la
+                           │                sesión ajena; abre la correcta
+Cierre:  App/Portal ──► POST /me/logout ──► Keycloak: DELETE sesión (en línea u offline)
+                                        └─► Moodle: local_iinicia_logout_user (todas las sesiones)
+                                             └─ si falla: users.moodle_logout_pending_at → reintento cada 60 s
+```
+
+## 7. Cambios en `sso.php`
+
+Archivos del plugin `moodle-custom/local/iinicia`, versión `2026112500` (0.2.0). **No se modificó Moodle Core.**
+
+**El comprobante** es `base64url(JSON).base64url(HMAC-SHA256)`, con un secreto compartido `MOODLE_SSO_SECRET` (32 bytes aleatorios). El secreto va en los `.env` locales, nunca en el repositorio.
+- `uid`: id de usuario de Moodle.
+- `uuid`: id institucional (`users.id`, que en Moodle es `idnumber`).
+- `sub`: sub de Keycloak (el nombre de usuario vinculado en `auth_oauth2_linked_login`).
+- `want`: ruta local de destino.
+- `iat`, `exp`: 60 s de vida.
+- `jti`: 24 bytes aleatorios.
+- No contiene tokens, contraseñas ni credenciales reutilizables.
+
+**`classes/sso_ticket.php` (nuevo) verifica:**
+1. la firma, con `hash_equals` (contra manipulación);
+2. los tipos de los campos;
+3. la vigencia: `exp` no vencido, `iat` con a lo sumo 30 s de adelanto y una vida máxima de 120 s;
+4. la forma de `jti` y que `want` sea una ruta local, sin `//` inicial, barras invertidas ni espacios (contra la redirección abierta);
+5. que el usuario esté activo (`deleted=0`, `suspended=0`, `auth=oauth2`) y que coincidan los tres identificadores: id de Moodle, `idnumber` = UUID y usuario vinculado = sub (contra la suplantación);
+6. el uso único: inserta `jti` en la tabla nueva `local_iinicia_sso_ticket`, con índice único. Un segundo uso falla (contra la repetición). Las filas de más de un día se limpian de forma ocasional.
+
+**Flujo de `sso.php`:**
+- **Sin comprobante** (enlaces antiguos, marcadores): si hay una sesión abierta, se cierra, y se manda a Keycloak. Nunca se reutiliza.
+- **Con comprobante válido:**
+  - Si no hay sesión, o es de otra persona, se cierra la anterior (`require_logout`), se abre una sesión nueva (`\core\session\manager::start()`) y se entra con `complete_user_login`.
+  - `complete_user_login` cambia el identificador de sesión, así que una sesión fijada de antemano no sirve (contra la fijación de sesión).
+  - Al final se comprueba de nuevo que `$USER->id` sea el del comprobante.
+- **Con comprobante inválido, vencido, usado o de otra identidad:** se cierra cualquier sesión y se muestra un error sin detalles.
+- **CSRF:** quien abre el enlace no puede elegir la identidad, porque solo la firma del backend la fija. El riesgo de un enlace compartido está en la sección 18.
+
+**Otros cambios del plugin:**
+- **Servicio web nuevo `local_iinicia_logout_user`.** Requiere `local/iinicia:syncidentity`, actúa solo sobre usuarios `oauth2` y usa `\core\session\manager::kill_user_sessions`.
+- **Proveedor de privacidad** que declara la tabla nueva.
+- **`cli/setup.php`:** lee `MOODLE_SSO_SECRET` (error si tiene menos de 32 caracteres) y configura el emisor con `loginparams=prompt=login`.
+
+**Defecto encontrado en el teléfono y corregido (`176f42f`):** sin `manager::start()`, el cambio desde la sesión de otra persona terminaba en la página de acceso de Moodle, porque `require_logout` deja la sesión inactiva.
+
+## 8. Cierre de sesión coordinado
+
+**Backend: `POST /api/v1/me/logout`.** Es la única ruta nueva; está autenticada, sin permiso adicional y responde 200.
+- **Keycloak:** borra la sesión del token (`sid`) con la API de administración, `DELETE /admin/realms/iinicia/sessions/{sid}`, en línea y, si no existe, con `?isOffline=true`. Usa la cuenta de servicio del backend, que ya tenía `manage-users`.
+- **Moodle:** `local_iinicia_logout_user` cierra todas las sesiones de la persona.
+  - Si Moodle no responde, `users.moodle_logout_pending_at` (migración 007) registra el cierre pendiente.
+  - `SyncService` lo reintenta cada 60 s.
+- **Respuesta:** `{keycloak, moodle, complete}`. `complete` solo es verdadero si los dos confirmaron.
+- **Auditoría:** se registra `auth.logout` con el detalle.
+
+**Portal.**
+- La ruta de cierre llama al backend desde el servidor.
+- Si el cierre se confirmó, va a `/`.
+- Si no:
+  - guarda la cookie httpOnly `iin_reauth` (30 días), y el siguiente inicio agrega `prompt=login`;
+  - redirige a `end_session` de Keycloak con `id_token_hint` como intento adicional.
+- Siempre borra las cookies de sesión.
+- El *callback* borra `iin_reauth`.
+
+**App Android.**
+- Ya no abre el navegador para cerrar sesión.
+- `AuthManager.logout` llama al backend.
+  - **Si confirmó:** revoca el refresh token, solo como limpieza.
+  - **Si no confirmó** (sin red, servidor caído, proceso terminado): guarda cifrado el refresh token como `pending_logout`, sin revocarlo. Si se revocara, el reintento ya no podría pedir al backend que cierre Moodle.
+  - En los dos casos, borra la sesión local y la caché.
+- `retryPendingLogout`:
+  - se ejecuta al abrir la app y después de cada inicio de sesión;
+  - renueva con el token pendiente, pide el cierre al backend y revoca;
+  - si Keycloak ya no reconoce el token (`invalid_grant`), la sesión ya no existe y se borra el pendiente.
+- La pantalla de inicio de sesión avisa: "Cerraste sesión en este teléfono. El cierre en el servidor se completará cuando haya conexión."
+- Todo inicio de sesión usa `prompt=login`. Una sesión residual del navegador nunca entra sola.
+
+**Casos cubiertos:**
+
+| Caso | Comportamiento |
+|---|---|
+| Cierre normal | Keycloak y Moodle confirman; auditoría `{"moodle":"ok","keycloak":"ok"}` |
+| Pérdida de conexión, teléfono bloqueado o proceso terminado durante el cierre | La sesión local se borra. El cierre queda pendiente y se completa al volver a abrir la app con conexión. El siguiente inicio pide credenciales |
+| Navegador cerrado | No influye: el cierre no usa el navegador |
+| Moodle detenido | Keycloak se cierra y Moodle queda pendiente. Al volver Moodle, el reintento cierra sus sesiones (M1 a M8) |
+| Keycloak detenido | Moodle se cierra y el cierre no se declara completo. El portal exige credenciales. Keycloak, al volver, pide la contraseña y no entra solo (K1 a K8) |
+
+## 9. Investigación de `offline_access`
+
+Medido en el Keycloak real del proyecto, 26.4.7, realm `iinicia`, con cuentas demo y `curl`:
+
+| | Con `offline_access` (actual) | Sin `offline_access` |
+|---|---|---|
+| Sesión del navegador tras el canje del código | **Se elimina** (sesiones en línea 5 → 4, *offline* 2 → 3) | Se conserva |
+| Tipo de refresh token | `Offline`, sin `exp` (inactividad *offline* de 30 días) | `Refresh`, vence a los 30 min de inactividad (máximo de 10 h) |
+| Entrar a Moodle desde la app sin comprobante | Segunda contraseña (causa confirmada de R5) | Sin contraseña, pero reutilizando la sesión del navegador |
+| La app sin uso durante más de 30 min | Sigue con sesión | Pide credenciales |
+
+**Otras mediciones:**
+- `DELETE /admin/realms/iinicia/sessions/{sid}?isOffline=true` devuelve 204, y la renovación posterior falla con 400.
+- Con una sesión residual del navegador y `prompt=login`, Keycloak muestra la reautenticación de la cuenta anterior: solo la contraseña, el nombre visible y "Reiniciar" (`#reset-login`). No entra solo.
+- Si otra persona inicia sesión en el mismo navegador, Keycloak termina la sesión anterior.
+
+**Decisión: se conserva `offline_access`.**
+- Quitarlo obligaría a iniciar sesión cada 30 min de inactividad, o a ampliar la duración de los tokens, lo que está prohibido.
+- No resolvía el defecto: la sesión del navegador seguiría compartida entre cuentas.
+- Con el comprobante firmado, la entrada al campus ya no depende de la sesión del navegador de Keycloak. Eso elimina también la segunda contraseña (R5) sin debilitar nada.
+- No se cambiaron duraciones, PKCE, MFA, firmas ni rotación.
+
+## 10. Decisiones sobre tokens
+
+- **Ningún token, contraseña ni credencial reutilizable va en una URL.** El comprobante es de un solo uso, dura 60 s, solo abre Moodle y no sirve contra la API ni contra Keycloak.
+- La identidad del comprobante la fija el backend a partir del token validado, nunca a partir de datos del navegador.
+- El secreto del comprobante está separado de los secretos de OAuth; para rotarlo basta con cambiar `MOODLE_SSO_SECRET` y ejecutar `cli/setup.php`.
+- **App:**
+  - El refresh token pendiente se guarda con el mismo almacén cifrado (Keystore) que la sesión. No se reutiliza para entrar: solo para completar el cierre.
+  - La rotación de refresh tokens sigue estricta. Los tokens usados en el reintento se rotan y se revocan.
+- **Proceso terminado durante una renovación (A16, R4):**
+  - **Falla de forma segura:** Keycloak rechaza el token anterior, la app borra la sesión y pide credenciales. Nunca entra con otra cuenta.
+  - La corrección completa (guardar el estado antes de usar el token nuevo, o valorar `refreshTokenMaxReuse`) queda para la Fase 5.
+- No se agregaron dependencias nuevas: ni Room, ni Firebase, ni bibliotecas de terceros.
+
+## 11. Pruebas de aislamiento
+
+**Antes de la corrección** (`30d4710`, `e2e/tests/session-isolation.spec.ts`, mismo contexto de navegador, cierre real con "Salir"): **7 fallaron y 1 pasó**. Evidencia: `evidencias/aislamiento-sesiones-antes.txt`.
+
+**Después** (cada prueba comprueba la identidad real en Moodle, en la página `/user/profile.php`, no solo el nombre del menú):
+
+| Prueba | Resultado |
+|---|---|
+| Estudiante → profesor | Correcto |
+| Profesor → estudiante | Correcto |
+| Superadmin → estudiante | Correcto |
+| Estudiante → superadmin | Correcto |
+| Estudiante A → estudiante B (cuenta de prueba "Prueba alumnob") | Correcto |
+| Sin sesión: acceso directo a Moodle no muestra a nadie | Correcto |
+| Enlace del profesor con la sesión de Moodle del estudiante abierta, sin cerrar sesión | Correcto: queda exactamente "Demo Docente" |
+| Comprobante usado dos veces, manipulado o vencido | Correcto: no abre sesión |
+
+Resultado: **8 de 8** (`evidencias/aislamiento-sesiones-despues.txt`).
+
+**Fallas de servicios** (`e2e/session-failures.mjs`): detiene y arranca contenedores con `docker compose stop/start`, sin recrearlos, por eso no está en la suite normal. Resultado: **17 de 17** (`evidencias/cierre-con-fallas.txt`).
+- M1 a M8: cierre con Moodle detenido, cierre pendiente, reintento y cambio a profesor.
+- K1 a K8: cierre con Keycloak detenido, reautenticación sin entrada automática, y portal y Moodle con el profesor.
+- Una comprobación extra para el formulario de reautenticación.
+
+**Pruebas unitarias nuevas:**
+- **Backend** (`test/sessions.test.ts`):
+  - comprobante: contenido, firma, uso único, redirección abierta, sin secretos;
+  - resultado del cierre: normal, Moodle caído y reintento, Keycloak caído, sin `sid`, aspirante sin Moodle;
+  - manejador de error del *pool* de PostgreSQL.
+- **Portal** (`test/logout-policy.test.ts`): 4 pruebas de la política de reautenticación.
+- **Android** (`SessionIsolationTest`): 11 pruebas.
+  - cierre confirmado y no confirmado;
+  - pendiente conservado al cambiar de cuenta;
+  - reintento correcto, sin red y con sesión inexistente;
+  - otra cuenta no ve la caché;
+  - `prompt=login`;
+  - aviso en pantalla.
+- **Android instrumentada:** `interruptorDeNotificacionesConNombre` (sección 13).
+
+**Contratos:** la ruta nueva se agregó a una lista explícita de rutas aprobadas en `test/contracts/api.contract.test.mjs`. Todas las anteriores deben seguir existiendo con el mismo permiso, código y límites. No se cambió ninguna ruta de `/api/v1`.
+
+## 12. Resultados en el teléfono físico
+
+**Dispositivo:** ZTE 9000, Android 10 (API 29), Brave como navegador predeterminado.
+- La app IINICIA debug se actualizó con `adb install -r`, conservando los datos, sin desinstalar nada.
+- Conexión por `adb reverse` (4000, 8180, 8081 y 3000); el backend siguió en `127.0.0.1`.
+- Se usó la depuración de Brave por USB solo para leer la identidad de las pestañas de `localhost`.
+- Las contraseñas de las cuentas demo se escribieron por ADB y no se registraron.
+
+| Prueba | Resultado |
+|---|---|
+| Inicio de sesión | Correcto. Keycloak pide credenciales siempre (`prompt=login`) |
+| Campus desde la app (estudiante y profesor) | Correcto, **sin segunda contraseña**; Moodle muestra la identidad correcta |
+| Cambio estudiante → profesor → estudiante en la app, con el APK final | Correcto: cada vez, Moodle muestra exactamente a la cuenta actual ("Demo Docente", luego "Demo Estudiante") |
+| Enlace del profesor con pestañas de Moodle del estudiante abiertas en Brave | Correcto: todas las pestañas pasan a "Demo Docente" (tras la corrección `176f42f`) |
+| Cierre normal | Correcto: auditoría `{"moodle":"ok","keycloak":"ok"}`, sin errores |
+| Acceso directo a Moodle en Brave tras cerrar sesión | Sin sesión |
+| Cierre interrumpido (backend detenido durante el cierre) | Correcto: aviso en la pantalla de inicio de sesión; al reabrir con conexión, el cierre se completa (auditoría correcta, sesión *offline* de Keycloak eliminada, Moodle sin sesión) |
+| Sin sesiones anteriores tras cambiar de cuenta | Correcto: el perfil y los datos son de la cuenta nueva |
+| A17: actualizar al volver del segundo plano | Correcto: un aviso nuevo apareció al volver tras 65 s |
+| Fecha sin conexión | Correcto: "…guardada el 25 nov 2026 2:43 p. m." (sin doble punto) |
+| *Deep links* `iinicia://curso/3` e `iinicia://notificaciones` | Correcto |
+| Notificaciones del sistema | Correcto: 2 notificaciones presentes |
+| Recuperación tras una falla de conexión | Correcto: al restaurar la conexión, deslizar para actualizar quitó el aviso y cargó los datos actuales |
+| Android 8, 12 y 13+ | **Pendiente:** no hay dispositivo ni imagen de esas versiones |
+
+**Defectos que solo aparecieron en el teléfono, ya corregidos:**
+1. La primera versión del cierre no confirmado revocaba el refresh token. Al quitar `adb reverse`, las conexiones abiertas siguen vivas, y la revocación llegaba a Keycloak aunque el backend no respondiera. El reintento encontraba la sesión inexistente y nunca cerraba Moodle. Ahora no se revoca sin confirmación del backend (`87d3e1c`).
+2. El cambio desde una sesión ajena terminaba en la página de acceso de Moodle (sección 7, `176f42f`).
+
+**Configuración del teléfono restaurada al terminar:**
+- pantalla activa por USB: `stay_on_while_plugged_in` volvió a 0;
+- se retiraron la redirección de depuración de Brave y todas las reglas de `adb reverse`;
+- la accesibilidad no se modificó: `accessibility_enabled=0` y `touch_exploration_enabled=0`, como estaban.
+
+Quedaron abiertas, en Brave, las pestañas de prueba de `localhost`; puedes cerrarlas.
+
+## 13. Resultados de TalkBack
+
+**TalkBack no está instalado en el teléfono.** No existe el paquete `com.google.android.marvin.talkback` (Android Accessibility Suite), y el sistema solo tiene 3 servicios de accesibilidad ajenos a lectores de pantalla.
+- Instalarlo requiere instalar una aplicación, algo que no está autorizado, así que **la prueba manual con TalkBack queda pendiente**.
+- Para hacerla, se necesita tu autorización para instalar Android Accessibility Suite desde Play Store.
+- El emulador tampoco tiene TalkBack.
+
+**Revisión sustituta:** en el teléfono se revisó el árbol de accesibilidad, que es lo que lee TalkBack, con `uiautomator`, pantalla por pantalla:
+- inicio de sesión;
+- Inicio, Cursos, detalle de curso, Avisos y Perfil;
+- barra de navegación.
+
+Se comprobó que cada elemento interactivo tenga un nombre.
+
+| Pantalla | Elementos interactivos | Sin nombre |
+|---|---|---|
+| Inicio de sesión | 1 | 0 |
+| Inicio | 6 | 0 |
+| Cursos | 4 | 0 |
+| Detalle de curso | 9 | 0 |
+| Avisos | 5 | 0 |
+| Perfil | 5 | **1 → 0** |
+
+**Defecto encontrado y corregido:** en Perfil, el interruptor de notificaciones no tenía nombre propio. "Notificaciones" era un texto aparte, y TalkBack habría leído solo "Activado, interruptor".
+- Ahora toda la fila es el interruptor (`Modifier.toggleable` con `Role.Switch`), y se lee "Notificaciones, activado, interruptor". Además, el área táctil abarca toda la fila.
+- Lo cubre la prueba instrumentada `interruptorDeNotificacionesConNombre`.
+- Se verificó en el teléfono con el APK nuevo.
+
+**Observación:** la pestaña activa aparece como "seleccionada" y no como pulsable. TalkBack la anuncia como seleccionada; es el comportamiento esperado.
+
+**Pendiente con TalkBack real:** orden del foco, anuncio de los estados de carga y de error (las regiones en vivo ya están declaradas), los diálogos y el aviso de cierre pendiente.
+
+## 14. Diagnóstico de PostgreSQL
+
+Diagnóstico **no destructivo**: no se eliminaron contenedores, volúmenes, bases de datos ni respaldos.
+
+**Lo que se comprobó:**
+- **Contenedor:** `RestartCount` 0, `OOMKilled` false, sin límite de memoria, `shm` de 64 MB.
+- **Docker:** máquina virtual de 8 GB y 4 CPU, 6,4 GB disponibles, presión de memoria 0.
+- **Windows:** 15,9 GB de RAM, con unos 2,4 GB libres durante las pruebas. Android Studio y Gradle ocupaban unos 3,5 GB.
+- **Disco:** 262 GB libres.
+- **Integridad:** `pg_dump` de `portal`, `keycloak` y `moodle` (12, 13 y 59 MB) terminó sin errores. Los datos están completos: 19 usuarios, 4 programas, 1 490 registros de auditoría y 7 migraciones.
+- **Configuración:** `logging_collector` desactivado y `data_checksums` desactivado.
+
+**Causa de las 3 recuperaciones de la Fase 4.9: no se puede determinar.**
+- Los registros completos se perdieron: el contenedor se recreó a las 19:28 por un `docker compose up` de esta fase.
+- Solo quedan las líneas capturadas entonces: `could not send data to client: Broken pipe` seguida de `server process exited with exit code 2`, tres veces.
+- No hay evidencia de falta de memoria (no hubo `OOMKilled`) ni de corrupción.
+
+**Hallazgo y corrección:** al recrearse PostgreSQL, el backend terminó por completo por un error no manejado del *pool* de `pg` ("terminating connection due to administrator command"). Ahora los dos *pools* tienen un manejador de errores, con su prueba. Desde entonces se usa `docker compose up --no-deps` para no recrear PostgreSQL ni Keycloak.
+
+**Recomendaciones para la Fase 6:**
+- guardar los registros de PostgreSQL de forma persistente (`logging_collector` o un volumen);
+- definir `shm_size` y límites de memoria;
+- usar `--no-deps` en los scripts;
+- agregar monitoreo;
+- fijar la memoria de WSL con `.wslconfig`.
+
+## 15. Correcciones menores
+
+- **A17:** las listas se actualizan al volver del segundo plano si los datos tienen más de 60 s (`Freshness` y `LifecycleEventEffect(ON_RESUME)` en las 5 pantallas).
+- **Doble punto en la fecha:** `savedCopyNotice` quita el punto final de "p. m.".
+- **Accesibilidad:** el interruptor de notificaciones ahora tiene nombre (sección 13).
+- **Backend:** no termina si PostgreSQL cierra conexiones inactivas (sección 14).
+- **Acceso directo a Moodle:** siempre pide credenciales (`loginparams=prompt=login`).
+
+## 16. Resultados automatizados
+
+Ejecutados el 25/11/2026 sobre el código final de la rama:
+
+| Conjunto | Resultado | Mínimo de referencia |
+|---|---|---|
+| Backend: unitarias | 55 de 55 | 43 |
+| Backend: integración | 8 de 8 | 8 |
+| Backend: contratos | 55 de 55 | 54 |
+| Backend: `typecheck` y `build` | Correctos | — |
+| Portal: `node --test` y Vitest | 9 de 9 y 50 de 50 | 5 y 50 |
+| Portal: `typecheck`, `eslint` y `build` | Correctos (0 errores y 0 avisos de lint) | — |
+| E2E (Playwright, suite completa) | 89 de 89 (20,2 min; 81 anteriores y 8 de aislamiento) | 81 |
+| E2E de fallas de servicios (`session-failures.mjs`) | 17 de 17 | — |
+| Android: unitarias | 67 de 67 | 56 |
+| Android: instrumentadas (emulador Pixel 7, Android 17) | 13 de 13 | 12 |
+| Android: lint | 0 errores y 16 avisos (sin cambios) | — |
+| `npm audit --omit=dev` (backend, portal y e2e) | 0 vulnerabilidades | — |
+
+## 17. Commits realizados
+
+| Commit | Contenido |
+|---|---|
+| `30d4710` | Pruebas E2E que reproducen el defecto (fallan antes de la corrección) |
+| `c9bee8b` | Moodle: comprobante firmado de un solo uso en `sso.php`; nunca reutiliza la sesión de otra cuenta |
+| `fc27ba8` | Backend: firma del comprobante y cierre coordinado (`POST /api/v1/me/logout`) |
+| `3cc9b31` | Portal: cierre coordinado en el servidor y credenciales obligatorias tras un cierre no confirmado |
+| `3e18ffc` | Android: cierre coordinado sin navegador, credenciales siempre, actualización al volver |
+| `6e78e45` | Moodle pide credenciales en el acceso directo; el backend sobrevive al cierre de conexiones de PostgreSQL |
+| `1b8c950` | E2E: cambio de cuenta tras un cierre con Moodle o Keycloak detenidos (17 de 17) |
+| `87d3e1c` | Android: el cierre no confirmado conserva el token para el reintento en lugar de revocarlo |
+| `176f42f` | Moodle: el cambio desde la sesión abierta de otra persona abre la nueva |
+| `0a55f97` | Android: el interruptor de notificaciones tiene nombre accesible |
+| Commit de documentación | Este documento, documentos 04, 05, 12 y 15, índice, inventario de endpoints y OpenAPI, y capturas regeneradas por la suite E2E |
+
+No se reescribió el historial ni se subió nada a remotos.
+
+## 18. Riesgos pendientes
+
+1. **Reautenticación con el nombre anterior (baja).** Si Keycloak estaba caído durante el cierre, queda la sesión del navegador. El siguiente inicio muestra la reautenticación de la cuenta anterior: nombre visible, contraseña obligatoria y opción "Reiniciar". No da acceso, pero revela el nombre de usuario anterior en un equipo compartido.
+2. **Enlace de campus compartido durante 60 s (baja).** El comprobante identifica a quien lo pidió. Si esa persona lo comparte antes de usarlo, quien lo abra entra como ella (*login CSRF* o entrega voluntaria). Lo mitigan el uso único y los 60 s de vida. Para la Fase 5: valorar ligarlo al navegador o al dispositivo.
+3. **Cerrar sesión en un dispositivo cierra Moodle en todos (decisión).** `kill_user_sessions` cierra todas las sesiones de Moodle de la persona. Es lo más seguro; el costo es volver a entrar al campus en los otros dispositivos.
+4. **A16 / R4 · Proceso terminado durante una renovación.** Falla de forma segura (pide credenciales). La corrección completa queda para la Fase 5.
+5. **Android 8, 12 y 13+ sin probar.** Siguen pendientes, como se acordó.
+6. **TalkBack sin probar en el dispositivo.** No está instalado; se necesita autorización para instalar Android Accessibility Suite (sección 13).
+7. **PostgreSQL:** la causa de las recuperaciones de la Fase 4.9 no se pudo determinar porque los registros ya no existen. Las recomendaciones están en la sección 14, para la Fase 6.
+8. **Integración:** la corrección vive en `fix/cross-account-session-isolation`. Falta integrarla en `refactor/android-modular-architecture` y después en `main`, con tu autorización.
+
+## 19. Procedimiento de recuperación
+
+- **Volver al estado anterior:** `git revert` de los commits de la sección 17, en orden inverso, en la rama. El historial no se reescribe.
+- **Moodle:**
+  - La versión `2026112500` solo agrega la tabla `local_iinicia_sso_ticket` y un servicio web. Se pueden dejar al revertir el código.
+  - Si se revierte `sso.php`, vuelve el defecto crítico. No se recomienda sin otra protección.
+  - Después de cambiar el plugin: `docker compose up -d --no-build --no-deps moodle moodle-cron`, la actualización de Moodle y `cli/setup.php`.
+- **Base de datos del portal:** la migración 007 solo agrega la columna `users.moodle_logout_pending_at` y un índice parcial. No hace falta revertirla.
+- **Secreto `MOODLE_SSO_SECRET`:**
+  - para rotarlo, generar uno nuevo en los `.env` del backend y de la infraestructura y ejecutar `cli/setup.php` en Moodle;
+  - los enlaces emitidos antes dejan de servir (duran 60 s).
+- **App:**
+  - una versión anterior ignora `pending_logout` en el almacén cifrado;
+  - para volver: `git switch` a la rama anterior, `./gradlew assembleDebug` y `adb install -r`.
+- **Teléfono:** no queda ningún ajuste de prueba (sección 12) y no se tocaron otras aplicaciones.

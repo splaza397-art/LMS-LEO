@@ -40,4 +40,8 @@ Scripts de línea de comandos del plugin: `cli/setup.php` (configuración idempo
 
 ## SSO hacia Moodle
 
-`local/iinicia/sso.php?wantsurl=<ruta>` inicia el login OAuth2 con el emisor "IINICIA" configurado por `setup.php`. Moodle tiene desactivada la creación automática de cuentas (`authpreventaccountcreation`), así que solo entran las personas que el backend sincronizó. El backend genera el enlace solo para cursos o actividades del propio usuario.
+`local/iinicia/sso.php?ticket=<comprobante>` abre el campus con un comprobante firmado por el backend (HMAC-SHA256 con `MOODLE_SSO_SECRET`, 60 s de vida, uso único). Moodle comprueba que coincidan el usuario de Moodle, el UUID institucional y el sub de Keycloak; si hay abierta una sesión de otra persona, la cierra antes de abrir la correcta. Sin comprobante, `sso.php` nunca reutiliza una sesión: la cierra y manda al login OAuth2 del emisor "IINICIA", que siempre pide credenciales (`prompt=login`). El comprobante no contiene tokens. Detalle en el [documento 15b](15b-correccion-critica-sesiones.md).
+
+Moodle tiene desactivada la creación automática de cuentas (`authpreventaccountcreation`), así que solo entran las personas que el backend sincronizó. El backend genera el enlace solo para cursos o actividades del propio usuario.
+
+**Cierre de sesión coordinado:** `POST /api/v1/me/logout` cierra la sesión de Keycloak del token (API de administración) y todas las de Moodle (servicio web `local_iinicia_logout_user`). Responde `{keycloak, moodle, complete}`. Si Moodle no responde, el cierre queda pendiente (`users.moodle_logout_pending_at`) y se reintenta cada 60 s.

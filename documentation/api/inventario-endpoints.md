@@ -2,7 +2,7 @@
 
 Generado desde el código con `npm run inventory` (en `backend/`). No editar a mano.
 
-Total: **52** endpoints. "sesión" = requiere sesión válida, sin permiso adicional.
+Total: **53** endpoints. "sesión" = requiere sesión válida, sin permiso adicional.
 
 | Método | Ruta | Acceso | Código | Límite | Cuerpo | Parámetros |
 |---|---|---|---|---|---|---|
@@ -49,6 +49,7 @@ Total: **52** endpoints. "sesión" = requiere sesión válida, sin permiso adici
 | GET | `/api/v1/me/courses/:id` | sesión | 200 |  |  | id (ParseIntPipe) |
 | POST | `/api/v1/me/devices` | sesión | 201 |  | DeviceDto |  |
 | DELETE | `/api/v1/me/devices/:token` | sesión | 200 |  |  | token |
+| POST | `/api/v1/me/logout` | sesión | 200 |  |  |  |
 | GET | `/api/v1/me/notifications` | sesión | 200 |  |  |  |
 | POST | `/api/v1/me/notifications/:id/read` | sesión | 201 |  |  | id (ParseUUIDPipe) |
 | GET | `/api/v1/me/teaching` | sesión | 200 |  |  |  |
