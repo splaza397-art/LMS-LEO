@@ -27,14 +27,15 @@ import java.util.concurrent.TimeUnit
 /** Consulta avisos nuevos en segundo plano. Es el mecanismo equivalente a FCM mientras no exista proyecto Firebase. */
 class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val app = applicationContext as IiniciaApp
-        if (!app.auth.signedIn.value || !app.repository.notificationsEnabled) return Result.success()
+        val container = (applicationContext as IiniciaApp).container
+        val settings = container.settings
+        if (!container.auth.signedIn.value || !settings.notificationsEnabled) return Result.success()
         return try {
-            val notices = app.repository.notifications()
-            val last = app.repository.lastNotifiedId
+            val notices = container.notices.fetchFromServer()
+            val last = settings.lastNotifiedId
             val fresh = if (last == null) notices.filter { it.readAt == null } else notices.takeWhile { it.id != last }.filter { it.readAt == null }
             fresh.take(5).reversed().forEach { show(it.id, it.title, it.body, it.link) }
-            notices.firstOrNull()?.let { app.repository.lastNotifiedId = it.id }
+            notices.firstOrNull()?.let { settings.lastNotifiedId = it.id }
             Result.success()
         } catch (_: SessionExpiredException) {
             Result.success()

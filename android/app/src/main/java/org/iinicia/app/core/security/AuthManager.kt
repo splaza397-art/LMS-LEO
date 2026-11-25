@@ -28,10 +28,8 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class SessionExpiredException : Exception("La sesión expiró")
-
 /** OIDC Authorization Code + PKCE en el navegador del sistema: la app nunca recibe la contraseña. */
-class AuthManager(context: Context, private val store: SecureStore) {
+class AuthManager(context: Context, private val store: SecureStore) : Authenticator {
     private val service: AuthorizationService = AuthorizationService(
         context,
         AppAuthConfiguration.Builder().apply {
@@ -41,7 +39,7 @@ class AuthManager(context: Context, private val store: SecureStore) {
     private val mutex = Mutex()
     private var state: AuthState = store.get(KEY)?.let { runCatching { AuthState.jsonDeserialize(it) }.getOrNull() } ?: AuthState()
     private val _signedIn = MutableStateFlow(state.isAuthorized)
-    val signedIn: StateFlow<Boolean> = _signedIn
+    override val signedIn: StateFlow<Boolean> = _signedIn
 
     private val config = AuthorizationServiceConfiguration(
         Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/auth"),
@@ -50,14 +48,14 @@ class AuthManager(context: Context, private val store: SecureStore) {
         Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/logout"),
     )
 
-    fun loginIntent(): Intent = service.getAuthorizationRequestIntent(
+    override fun loginIntent(): Intent = service.getAuthorizationRequestIntent(
         AuthorizationRequest.Builder(config, CLIENT_ID, ResponseTypeValues.CODE, Uri.parse(REDIRECT))
             .setScope("openid profile email offline_access")
             .setUiLocales("es")
             .build(),
     )
 
-    suspend fun completeLogin(data: Intent) = mutex.withLock {
+    override suspend fun completeLogin(data: Intent) = mutex.withLock {
         val response = AuthorizationResponse.fromIntent(data)
         val error = AuthorizationException.fromIntent(data)
         if (response == null) throw error ?: IllegalStateException("Inicio de sesión cancelado")
@@ -74,7 +72,7 @@ class AuthManager(context: Context, private val store: SecureStore) {
     }
 
     /** El mutex evita renovaciones simultaneas, porque Keycloak rota el refresh token. */
-    suspend fun accessToken(): String = mutex.withLock {
+    override suspend fun accessToken(): String = mutex.withLock {
         if (!state.isAuthorized) throw SessionExpiredException()
         val token = suspendCancellableCoroutine { cont ->
             state.performActionWithFreshTokens(service) { access, _, ex ->
@@ -95,7 +93,7 @@ class AuthManager(context: Context, private val store: SecureStore) {
         }
     }
 
-    suspend fun logoutIntent(): Intent? = mutex.withLock {
+    override suspend fun logoutIntent(): Intent? = mutex.withLock {
         val idToken = state.idToken
         state.refreshToken?.let { revoke(it) }
         clearLocked()
@@ -124,7 +122,7 @@ class AuthManager(context: Context, private val store: SecureStore) {
         }
     }
 
-    suspend fun clearSession() = mutex.withLock { clearLocked() }
+    override suspend fun clearSession() = mutex.withLock { clearLocked() }
 
     private fun clearLocked() {
         state = AuthState()

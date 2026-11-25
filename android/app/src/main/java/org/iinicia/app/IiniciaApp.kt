@@ -7,12 +7,10 @@ import org.iinicia.app.di.AppContainer
 
 class IiniciaApp : Application() {
     lateinit var container: AppContainer private set
-    val auth get() = container.auth
-    val repository get() = container.repository
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(this)
+        container = AppContainer.create(this)
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Avisos académicos", NotificationManager.IMPORTANCE_DEFAULT),
         )

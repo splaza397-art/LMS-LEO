@@ -100,6 +100,7 @@ Estado de `android/` en `main` (`1a4c9dc`), antes de modificar código. Las cifr
 | A9 | Experiencia | El perfil muestra el estado en crudo (`active`). La barra superior dice "Curso" en el detalle, en vez del nombre |
 | A10 | Caché | Sin caducidad: sin conexión se muestra información de cualquier antigüedad y sin fecha. Se borra al cerrar sesión o al vencer la sesión (`store.clear()`), así que no pasa de un usuario a otro. Pero también borra la preferencia de notificaciones |
 | A11 | Accesibilidad | Las tarjetas tocables no anuncian su acción (`onClickLabel`). "Leído" y "no leído" se distinguen solo por negritas. El título de cada pantalla no se marca como encabezado |
+| A13 | **Privacidad** | **Datos de la cuenta anterior tras cambiar de usuario** (deducido del código; se intentará reproducir en la validación). `DashboardViewModel` se crea con `viewModel()` fuera del `NavHost`, así que pertenece a la `Activity`, no a la sesión. Si alguien cierra sesión y otra persona entra sin que se cierre la app, se reutiliza la misma instancia con los datos de la primera. `init` no vuelve a cargar, y la caché en memoria no se borra |
 | A12 | Recursos | Los PNG de `mipmap-*dpi` no se usan nunca: con `minSdk 26` siempre se toma el ícono adaptable de `mipmap-anydpi-v26`. Por eso aparecen 5 avisos de `IconLauncherShape` y 1 de `ObsoleteSdkInt` |
 
 ## Los 35 avisos de lint

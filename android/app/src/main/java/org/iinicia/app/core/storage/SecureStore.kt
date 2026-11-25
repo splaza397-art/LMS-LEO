@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Guarda valores cifrados con AES-GCM; la llave vive en Android Keystore y no es exportable. */
-class SecureStore(context: Context) {
+class SecureStore(context: Context) : KeyValueStore {
     private val prefs = context.getSharedPreferences("iinicia_secure", Context.MODE_PRIVATE)
 
     private fun key(): SecretKey {
@@ -29,7 +29,7 @@ class SecureStore(context: Context) {
     }
 
     @Synchronized
-    fun put(name: String, value: String?) {
+    override fun put(name: String, value: String?) {
         if (value == null) {
             prefs.edit().remove(name).apply()
             return
@@ -40,7 +40,7 @@ class SecureStore(context: Context) {
     }
 
     @Synchronized
-    fun get(name: String): String? {
+    override fun get(name: String): String? {
         val encoded = prefs.getString(name, null) ?: return null
         return try {
             val data = Base64.decode(encoded, Base64.NO_WRAP)
@@ -54,7 +54,7 @@ class SecureStore(context: Context) {
     }
 
     @Synchronized
-    fun clear() = prefs.edit().clear().apply()
+    override fun clear() = prefs.edit().clear().apply()
 
     private companion object {
         const val ALIAS = "iinicia_session_key"

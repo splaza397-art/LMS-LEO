@@ -7,28 +7,27 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.iinicia.app.BuildConfig
-import org.iinicia.app.core.security.AuthManager
+import org.iinicia.app.core.security.Session
 import org.iinicia.app.core.security.SessionExpiredException
 import java.util.concurrent.TimeUnit
 
 class ApiException(val code: Int, message: String) : Exception(message)
 
 /** Solo habla con el backend IINICIA: la app nunca contiene ni recibe tokens de Moodle. */
-class ApiClient(private val auth: AuthManager) {
-    val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+class ApiClient(
+    private val session: Session,
+    private val baseUrl: String,
+    private val http: OkHttpClient = defaultHttpClient(),
+) {
+    val json: Json = AppJson
 
     suspend fun request(path: String, method: String = "GET", body: String? = null): String {
-        val token = auth.accessToken()
+        val token = session.accessToken()
         return withContext(Dispatchers.IO) {
             val requestBody = body?.toRequestBody("application/json".toMediaType())
                 ?: if (method == "GET") null else ByteArray(0).toRequestBody()
             val request = Request.Builder()
-                .url("${BuildConfig.API_URL}/$path")
+                .url("$baseUrl/$path")
                 .header("Authorization", "Bearer $token")
                 .method(method, requestBody)
                 .build()
@@ -46,4 +45,11 @@ class ApiClient(private val auth: AuthManager) {
     }
 
     suspend inline fun <reified T> get(path: String): T = json.decodeFromString(request(path))
+
+    companion object {
+        fun defaultHttpClient(): OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
 }
