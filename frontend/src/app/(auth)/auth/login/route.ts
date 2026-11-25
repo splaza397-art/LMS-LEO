@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIES, cookieOptions, oidcEndpoint, seal } from "@/lib/session-core";
+import { loginPrompt, REAUTH_COOKIE } from "@/lib/logout-policy";
 
 const b64 = (bytes: Buffer) => bytes.toString("base64url");
 const safePath = (value: string | null) =>
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest) {
     code_challenge: challenge,
     code_challenge_method: "S256",
     ui_locales: "es",
+    // Si el último cierre de sesión no se confirmó, Keycloak pide credenciales aunque quede una sesión en el navegador.
+    ...loginPrompt(request.cookies.has(REAUTH_COOKIE)),
   }).toString();
 
   const response = NextResponse.redirect(url);
