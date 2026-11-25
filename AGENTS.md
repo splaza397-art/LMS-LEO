@@ -21,7 +21,7 @@ App Android ─────────┼────────────�
 | Carpeta | Responsabilidad |
 |---|---|
 | `backend/` | API NestJS 11 en 12 módulos (`src/modules/*`), migraciones SQL (`src/db/migrations`) y pruebas (`test/`) |
-| `frontend/` | Portal Next.js 16 (App Router). BFF en `src/app/api/*`, sesión en `src/lib/session-core.ts`, `src/proxy.ts` |
+| `frontend/` | Portal Next.js 16 (App Router), por funcionalidad en `src/features/*`. BFF en `src/app/api/*`, sesión en `src/lib/session-core.ts`, `src/proxy.ts` |
 | `android/` | App Kotlin y Compose con AppAuth (PKCE) |
 | `moodle-custom/` | Plugin `local_iinicia` (servicios web, SSO, CLI) y tema `theme_iinicia`. **Moodle Core no se modifica** |
 | `infrastructure/` | Docker Compose, realm y temas de Keycloak, imagen de Moodle, scripts de configuración y respaldo |
@@ -43,6 +43,32 @@ App Android ─────────┼────────────�
 - **Rutas:** las de `/api/v1` no cambian. Cualquier cambio debe pasar `npm run test:contracts`. Un parámetro de consulta nuevo debe ser opcional y estar en la lista permitida de la prueba de contrato. Para documentarlo en OpenAPI se usa `@ApiOptionalQueries`.
 - **Listas administrativas:** usar `parsePage` y `toPageResult` (`src/common/pagination.ts`). Sin `page` ni `pageSize` se responde el arreglo de siempre.
 - Comentarios y mensajes al usuario en español; nombres de código en inglés.
+
+## Frontend
+
+Detalle en [`documentation/14-refactorizacion-frontend.md`](documentation/14-refactorizacion-frontend.md).
+
+- **Rutas:**
+  - `app/(public)`, `app/(auth)` y `app/(protected)` son grupos que no cambian las URL.
+  - Las páginas solo componen. La lógica va en `src/features/<funcionalidad>`, una carpeta por módulo del backend.
+  - **No cambiar URL públicas:** hay redirecciones 301 de WordPress y SEO que dependen de ellas.
+- **Componentes compartidos** en `src/components/{ui,forms,tables,feedback,navigation,layout}`, sin reglas de negocio. Etiquetas en `src/config/labels.ts` y tipos de la API en `src/types/api.ts`.
+- **Datos del servidor:** `lib/api/server.ts` (`server-only`). Un componente `"use client"` nunca lo importa. Las constantes que comparten servidor y cliente van en `src/config/`.
+- **Datos del navegador:**
+  - Solo a través de `lib/api/client.ts` (`bff`, `postPublic`, `uploadImage`), que lanza `ApiError`. Un 401 lleva a iniciar sesión.
+  - **Sin reintentos automáticos**, y menos en escrituras.
+  - Lecturas con `useApiData` y listas con `usePagedList`: paginación del backend, espera de 350 ms, página 1 al filtrar y estado en la URL.
+  - Ninguna lista nueva del panel debe usar el modo de arreglo truncado.
+- **Paneles por rol:**
+  - Las pestañas salen de `config/admin-sections.ts` y Mi IINICIA de `features/dashboard/dashboard-sections.ts`, ambas a partir de `me.permissions`.
+  - Al cambiar la matriz RBAC, `test/features.test.tsx` debe seguir pasando para los 8 roles.
+  - Ocultar algo en la interfaz no sustituye la validación del backend.
+- **Sin `NEXT_PUBLIC_*` con secretos.** Los tokens solo existen en cookies `httpOnly`.
+- **Accesibilidad:**
+  - Cada campo usa los componentes de `components/forms`, con etiqueta y error conectado.
+  - Las tablas usan `Table`, con nombre de región.
+  - Las E2E de axe (`a11y-seo`, `responsive-a11y`) deben quedar en 0 violaciones y sin desborde a 360, 768, 1024 y 1440 px.
+- **Compilador de React:** no usar `useCallback` ni `useMemo` manuales, ni `setState` síncrono en efectos (ESLint lo marca).
 
 ## Seguridad (no negociable)
 
@@ -78,7 +104,7 @@ npm run test:contracts                          # compatibilidad de la API con l
 npm run inventory                               # regenera documentation/api/inventario-endpoints.* y openapi.json
 # Portal
 cd frontend && npm run build && npm start       # http://localhost:3000
-npm test && npm run typecheck && npx eslint .
+npm test && npm run typecheck && npx eslint .   # node --test y Vitest (componentes)
 # Extremo a extremo (servicios, backend y portal encendidos)
 cd e2e && npx playwright test
 # Android
@@ -91,6 +117,6 @@ cd android && ./gradlew assembleDebug lintDebug
 - No desplegar, no tocar servidores reales ni el WordPress en producción, no modificar Moodle Core.
 - No eliminar datos, migraciones, archivos importantes ni funcionalidades sin autorización.
 - No inventar resultados de pruebas: reportar lo que se ejecutó, y si algo no se pudo ejecutar, decirlo.
-- No exponer datos personales. Las capturas de evidencia ocultan a personas reales (`privacyMask` en `e2e/tests/helpers.ts`).
+- No exponer datos personales. Las capturas de evidencia usan solo datos ficticios y ocultan a personas reales (`privacyMask` en `e2e/tests/helpers.ts`, `e2e/capture-panels.mjs`).
 - No actualizar dependencias de forma masiva ni usar `npm audit fix --force`.
 - Las cuentas demo (`*@iinicia.test`) son solo para DEV; su contraseña está en `backend/.env` (`DEMO_PASSWORD`).

@@ -1,0 +1,62 @@
+{
+  "fecha": "2026-11-25T01:33:42.182Z",
+  "corridas": 5,
+  "nota": "Mediana de 5 cargas con caché vacía, PC de desarrollo. jsKB: JS pedido antes de load (propio de la página); jsTotalKB: incluye precargas de enlaces hasta networkidle",
+  "resultados": [
+    {
+      "page": "inicio",
+      "path": "/",
+      "jsKB": 141,
+      "jsTotalKB": 147,
+      "requests": 30,
+      "ttfbMs": 11,
+      "domContentLoadedMs": 242,
+      "loadMs": 407,
+      "readyMs": 1326
+    },
+    {
+      "page": "oferta",
+      "path": "/oferta",
+      "jsKB": 141,
+      "jsTotalKB": 147,
+      "requests": 39,
+      "ttfbMs": 10,
+      "domContentLoadedMs": 147,
+      "loadMs": 369,
+      "readyMs": 1425
+    },
+    {
+      "page": "programa",
+      "path": "/oferta/base-de-datos",
+      "jsKB": 143,
+      "jsTotalKB": 148,
+      "requests": 30,
+      "ttfbMs": 17,
+      "domContentLoadedMs": 150,
+      "loadMs": 336,
+      "readyMs": 1208
+    },
+    {
+      "page": "mi-iinicia (estudiante)",
+      "path": "/mi-iinicia",
+      "jsKB": 4,
+      "jsTotalKB": 4,
+      "requests": 31,
+      "ttfbMs": 12,
+      "domContentLoadedMs": 730,
+      "loadMs": 730,
+      "readyMs": 1324
+    },
+    {
+      "page": "panel (superadmin)",
+      "path": "/admin",
+      "jsKB": 3,
+      "jsTotalKB": 11,
+      "requests": 37,
+      "ttfbMs": 13,
+      "domContentLoadedMs": 155,
+      "loadMs": 155,
+      "readyMs": 1256
+    }
+  ]
+}
