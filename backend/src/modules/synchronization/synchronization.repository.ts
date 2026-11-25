@@ -25,6 +25,22 @@ export class SynchronizationRepository {
     );
   }
 
+  /** Personas con cierre de sesión de Moodle pendiente (Moodle no respondió al salir). */
+  pendingMoodleLogouts() {
+    return this.db.query<{ id: string; moodle_user_id: string }>(
+      `SELECT id, moodle_user_id FROM users
+        WHERE moodle_logout_pending_at IS NOT NULL AND moodle_user_id IS NOT NULL
+        ORDER BY moodle_logout_pending_at LIMIT 25`,
+    );
+  }
+
+  setMoodleLogoutPending(userId: string, pending: boolean) {
+    return this.db.query(
+      `UPDATE users SET moodle_logout_pending_at = ${pending ? 'COALESCE(moodle_logout_pending_at, now())' : 'NULL'} WHERE id = $1`,
+      [userId],
+    );
+  }
+
   snapshot(userId: string) {
     return this.db.one<SyncRow>(
       `SELECT id, oidc_sub, email, first_name, last_name, status, moodle_user_id FROM users WHERE id = $1`, [userId],

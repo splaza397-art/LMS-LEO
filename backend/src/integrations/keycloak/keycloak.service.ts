@@ -40,6 +40,26 @@ export class KeycloakService {
     });
   }
 
+  /**
+   * Cierra una sesión concreta de Keycloak (Fase 4.10): la del portal es "en línea" y la de la app, por
+   * offline_access, es "offline". Devuelve true si la sesión existía y se cerró, o si ya no existía.
+   * Lanza ServiceUnavailableException si Keycloak no responde.
+   */
+  async endSession(sid: string): Promise<boolean> {
+    if (!/^[0-9a-f-]{36}$/i.test(sid)) return false;
+    for (const offline of [false, true]) {
+      let response: Response;
+      try {
+        response = await this.request(`/sessions/${sid}${offline ? '?isOffline=true' : ''}`, { method: 'DELETE' });
+      } catch {
+        throw new ServiceUnavailableException('Proveedor de identidad no disponible');
+      }
+      if (response.status === 204) return true;
+      if (response.status !== 404) throw new ServiceUnavailableException('Proveedor de identidad no disponible');
+    }
+    return true;
+  }
+
   async findByEmail(email: string): Promise<string | null> {
     const response = await this.request(`/users?exact=true&email=${encodeURIComponent(email)}`);
     if (!response.ok) throw new ServiceUnavailableException('Proveedor de identidad no disponible');

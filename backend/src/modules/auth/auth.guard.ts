@@ -26,6 +26,7 @@ export class AuthGuard implements CanActivate {
     if (!header.startsWith('Bearer ')) throw new UnauthorizedException('Sesión requerida');
 
     let sub: string;
+    let sid: string | undefined;
     try {
       const { payload } = await jwtVerify(header.slice(7), jwks, {
         issuer,
@@ -33,6 +34,7 @@ export class AuthGuard implements CanActivate {
         algorithms: ['RS256'],
       });
       sub = String(payload.sub);
+      sid = typeof payload.sid === 'string' ? payload.sid : undefined;
     } catch {
       throw new UnauthorizedException('Token inválido o expirado');
     }
@@ -40,7 +42,7 @@ export class AuthGuard implements CanActivate {
     const user = await this.users.findPrincipalBySub(sub);
     if (!user) throw new UnauthorizedException('Cuenta no registrada');
     if (user.status === 'suspendido') throw new ForbiddenException('Cuenta suspendida');
-    request.user = user;
+    request.user = { ...user, sid };
 
     const permission = this.reflector.getAllAndOverride<Permission>(PERMISSION_KEY, targets);
     if (permission && !hasPermission(user.roles, permission)) {

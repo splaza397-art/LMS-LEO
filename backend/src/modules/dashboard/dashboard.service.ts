@@ -1,10 +1,11 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { config } from '../../config';
 import { MoodleCourse, MoodleService } from '../../integrations/moodle/moodle.service';
 import type { AuthUser } from '../auth/auth.decorators';
 import { hasPermission } from '../auth/permissions';
 import { EnrollmentsRepository } from '../enrollments/enrollments.repository';
 import { UsersRepository } from '../users/users.repository';
+import { signCampusTicket } from './campus-ticket';
 
 const summary = ({ sections, ...course }: MoodleCourse) => ({
   ...course,
@@ -61,7 +62,12 @@ export class DashboardService {
         wantsurl = `/course/view.php?id=${Number(courseId)}`;
       }
     }
-    return { url: `${config.moodle.url}/local/iinicia/sso.php?wantsurl=${encodeURIComponent(wantsurl)}` };
+    // Fase 4.10: el enlace lleva un comprobante firmado, de 60 s y de un solo uso, con la identidad de esta persona
+    // (usuario Moodle, UUID y sub). Moodle no reutiliza una sesión abierta de otra cuenta.
+    const moodleUserId = Number(await this.users.moodleUserId(user.id));
+    if (!moodleUserId) throw new ConflictException('Tu cuenta del campus aún se está preparando. Intenta en unos minutos.');
+    const ticket = signCampusTicket({ uid: moodleUserId, uuid: user.id, sub: user.sub, want: wantsurl }, config.moodle.ssoSecret);
+    return { url: `${config.moodle.url}/local/iinicia/sso.php?ticket=${ticket}` };
   }
 
   /** Cursos que imparte o supervisa el usuario, con el avance de sus estudiantes. */

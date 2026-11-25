@@ -21,14 +21,34 @@ const baselineApi = require('./openapi.baseline.json');
  */
 const ALLOWED_NEW_QUERY = new Set(['page', 'pageSize', 'sort', 'order', 'q', 'status', 'role', 'programId', 'type', 'action', 'from', 'to']);
 
+/**
+ * Rutas agregadas después de la referencia, cada una con su contrato completo. Agregar una ruta exige declararla
+ * aquí; las rutas de la referencia siguen sin poder cambiar.
+ * - Fase 4.10: POST /api/v1/me/logout, cierre de sesión coordinado (Keycloak y Moodle) de la persona del token.
+ */
+const APPROVED_NEW_ROUTES = {
+  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: null, params: [], query: [] },
+};
+
 const key = (r) => `${r.method} ${r.path}`;
 const current = routeInventory(AppModule);
 const byKey = new Map(current.map((r) => [key(r), r]));
 
 describe('contrato de rutas (método, ruta, permiso, código HTTP, límite, cuerpo y parámetros)', () => {
-  it('existen exactamente las mismas rutas que antes de la refactorización', () => {
-    assert.deepEqual(current.map(key).sort(), baselineRoutes.map(key).sort());
+  it('existen todas las rutas de antes y solo se agregaron las rutas nuevas aprobadas', () => {
+    const now = current.map(key);
+    for (const r of baselineRoutes) assert.ok(now.includes(key(r)), `falta la ruta ${key(r)}`);
+    const added = now.filter((k) => !baselineRoutes.some((r) => key(r) === k)).sort();
+    assert.deepEqual(added, Object.keys(APPROVED_NEW_ROUTES).sort(), 'ruta nueva no aprobada (agregarla a APPROVED_NEW_ROUTES y documentarla)');
   });
+
+  for (const [route, expected] of Object.entries(APPROVED_NEW_ROUTES)) {
+    it(`${route} (nueva)`, () => {
+      const now = byKey.get(route);
+      assert.ok(now, 'la ruta nueva no existe');
+      for (const [field, value] of Object.entries(expected)) assert.deepEqual(now[field], value, `${field} distinto`);
+    });
+  }
 
   for (const before of baselineRoutes) {
     it(key(before), () => {

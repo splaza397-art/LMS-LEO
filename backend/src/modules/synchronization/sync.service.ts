@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { DbService } from '../../db/db.service';
 import { MoodleService } from '../../integrations/moodle/moodle.service';
 import { AuditService } from '../audit/audit.service';
+import { SessionService } from './session.service';
 import { SynchronizationRepository } from './synchronization.repository';
 
 const MOODLE_MANAGER_ROLES = new Set(['superadmin', 'admin_academico']);
@@ -28,6 +29,7 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
     private readonly repo: SynchronizationRepository,
     private readonly moodle: MoodleService,
     private readonly audit: AuditService,
+    private readonly sessions: SessionService,
   ) {}
 
   onModuleInit() {
@@ -45,6 +47,8 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
     try {
       // Sin espera: si otra solicitud o instancia ya sincroniza a esa persona, se omite en esta vuelta.
       for (const row of await this.repo.dueForRetry()) await this.syncUser(row.id, { wait: false });
+      // Cierres de sesión de Moodle que quedaron pendientes porque Moodle no respondía (Fase 4.10).
+      await this.sessions.retryPendingMoodleLogouts();
     } catch (error) {
       this.logger.error(`Reintento fallido: ${(error as Error).message}`);
     } finally {
