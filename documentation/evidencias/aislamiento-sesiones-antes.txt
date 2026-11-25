@@ -1,0 +1,32 @@
+  1) tests\session-isolation.spec.ts:92:1 › estudiante → profesor: Moodle no conserva al estudiante 
+    Error: acceso directo a Moodle tras cerrar sesión
+    Expected: not "Demo Estudiante"
+    test-results\session-isolation-estudian-73289-e-no-conserva-al-estudiante\test-failed-1.png
+  2) tests\session-isolation.spec.ts:93:1 › profesor → estudiante ──────────────────────────────────
+    Error: acceso directo a Moodle tras cerrar sesión
+    Expected: not "Demo Docente"
+    test-results\session-isolation-profesor-→-estudiante\test-failed-1.png
+  3) tests\session-isolation.spec.ts:94:1 › superadmin → estudiante ────────────────────────────────
+    Error: acceso directo a Moodle tras cerrar sesión
+    Expected: not "Demo Superadmin"
+    test-results\session-isolation-superadmin-→-estudiante\test-failed-1.png
+  4) tests\session-isolation.spec.ts:95:1 › estudiante → superadmin ────────────────────────────────
+    Error: acceso directo a Moodle tras cerrar sesión
+    Expected: not "Demo Estudiante"
+    test-results\session-isolation-estudiante-→-superadmin\test-failed-1.png
+  5) tests\session-isolation.spec.ts:96:1 › estudiante A → estudiante B ────────────────────────────
+    Error: acceso directo a Moodle tras cerrar sesión
+    Expected: not "Demo Estudiante"
+    test-results\session-isolation-estudiante-A-→-estudiante-B\test-failed-1.png
+  6) tests\session-isolation.spec.ts:98:1 › una sesión de Moodle de otra cuenta no se reutiliza aunque no se haya cerrado sesión en el portal 
+    Error: el enlace del profesor no deja al estudiante dentro
+    Expected: not "Demo Estudiante"
+    test-results\session-isolation-una-sesi-3b32b-cerrado-sesión-en-el-portal\test-failed-2.png
+    test-results\session-isolation-una-sesi-3b32b-cerrado-sesión-en-el-portal\test-failed-1.png
+  7) tests\session-isolation.spec.ts:127:1 › un enlace manipulado o vencido no abre una sesión ─────
+    Error: el enlace lleva un comprobante firmado
+    Received: null
+    test-results\session-isolation-un-enlac-67cfc--vencido-no-abre-una-sesión\test-failed-1.png
+    test-results\session-isolation-un-enlac-67cfc--vencido-no-abre-una-sesión\test-failed-2.png
+  7 failed
+  1 passed (6.0m)
