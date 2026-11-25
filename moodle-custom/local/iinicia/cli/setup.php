@@ -48,6 +48,10 @@ $values = [
     'basicauth' => 0,
     'loginscopes' => 'openid profile email',
     'loginscopesoffline' => 'openid profile email',
+    // Fase 4.10: entrar a Moodle directamente (marcador, historial) siempre pide credenciales en Keycloak. La entrada
+    // normal desde IINICIA usa comprobantes firmados; así, una sesión de Keycloak que haya quedado en el navegador
+    // (por ejemplo, si Keycloak no respondía al cerrar sesión) no abre Moodle con la cuenta anterior.
+    'loginparams' => 'prompt=login',
     'requireconfirmation' => 1,
     'loginpagename' => 'tu cuenta IINICIA',
 ];

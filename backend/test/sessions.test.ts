@@ -100,3 +100,16 @@ describe('Cierre de sesión coordinado', () => {
     assert.deepEqual(await s.logout(user), { keycloak: 'ok', moodle: 'sin_sesion', complete: true });
   });
 });
+
+describe('Conexiones a PostgreSQL', () => {
+  it('un error en una conexión inactiva no termina el proceso (el pool tiene manejador de error)', async () => {
+    const { DbService } = await import('../src/db/db.service');
+    const db = new DbService();
+    const pools = [db.pool, (db as unknown as { lockPool: import('pg').Pool }).lockPool];
+    for (const pool of pools) {
+      assert.ok(pool.listenerCount('error') > 0, 'falta el manejador de error del pool');
+      assert.doesNotThrow(() => pool.emit('error', new Error('terminating connection due to administrator command'), {} as never));
+    }
+    await Promise.all(pools.map((p) => p.end()));
+  });
+});
