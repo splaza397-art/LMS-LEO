@@ -1,6 +1,8 @@
 // Funcionalidades separadas en la etapa 3.4: formularios, validaciones, CSV y secciones del panel por rol.
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 import { permissionsFor, ROLES } from "../../backend/src/modules/auth/permissions";
 import { ADMIN_PERMISSIONS, sectionsFor } from "@/config/admin-sections";
 import { InfoRequestForm } from "@/features/admissions/info-request-form";

@@ -2,23 +2,28 @@
 
 import { Fragment, useState } from "react";
 import { ConfirmButton } from "@/components/feedback/confirm-button";
-import { ErrorMessage, Loading } from "@/components/feedback/status";
+import { EmptyState, ErrorMessage, Loading } from "@/components/feedback/status";
+import { SelectField } from "@/components/forms/field";
+import { SearchInput } from "@/components/forms/search-input";
 import { Table, Td } from "@/components/tables/data-table";
-import { label, ROLE_LABELS, SYNC_LABELS, USER_STATUS_LABELS } from "@/config/labels";
+import { ListToolbar, SortSelect } from "@/components/tables/list-controls";
+import { Pagination } from "@/components/tables/pagination";
+import { label, options, ROLE_LABELS, SYNC_LABELS, USER_STATUS_LABELS } from "@/config/labels";
 import { UserEnrolments } from "@/features/enrollments/user-enrolments";
 import { useApiData } from "@/hooks/use-api-data";
+import { usePagedList } from "@/hooks/use-paged-list";
 import { ApiError, bff } from "@/lib/api/client";
 import type { AdminProgram, AdminUser, MoodleCourseRef } from "@/types/api";
 import { RoleEditor } from "./role-editor";
 
 /**
- * Usuarios. Cada acción aparece solo si el rol tiene el permiso correspondiente (matriz RBAC); el backend
- * vuelve a comprobarlo en cada solicitud.
+ * Usuarios, paginados y filtrados en el backend. Cada acción aparece solo si el rol tiene el permiso
+ * (matriz RBAC); el backend vuelve a comprobarlo en cada solicitud. El coordinador solo recibe personas
+ * relacionadas con su programa.
  */
-export function UsersPanel({ permissions, selfId }: { permissions: string[]; selfId: string }) {
-  const [q, setQ] = useState("");
+export function UsersPanel({ permissions, selfId, restoreFilters }: { permissions: string[]; selfId: string; restoreFilters?: boolean }) {
+  const list = usePagedList<AdminUser>("admin/users", { filters: { status: "", role: "" }, restoreFromUrl: restoreFilters });
   const [open, setOpen] = useState<string | null>(null);
-  const { data: rows, error, loading, reload, setError } = useApiData<AdminUser[]>(`admin/users?q=${encodeURIComponent(q)}`);
   const canRoles = permissions.includes("roles:manage");
   const canEnrol = permissions.includes("enrolments:manage");
   const canSuspend = permissions.includes("users:suspend");
@@ -29,22 +34,28 @@ export function UsersPanel({ permissions, selfId }: { permissions: string[]; sel
   const act = async (fn: () => Promise<unknown>) => {
     try {
       await fn();
-      setError("");
-      await reload();
+      list.setError("");
+      await list.reload();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "No se pudo completar la acción");
+      list.setError(e instanceof ApiError ? e.message : "No se pudo completar la acción");
     }
   };
 
   return (
     <>
-      <label htmlFor="user-search" className="label">Buscar</label>
-      <input id="user-search" className="input mb-4 max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre o correo" />
-      <ErrorMessage message={error} />
-      {loading && !rows && <Loading />}
-      {rows && (
+      <ListToolbar>
+        <SearchInput label="Buscar" value={list.search} onChange={list.setSearch} placeholder="Nombre o correo" />
+        <SelectField label="Filtrar por estado" placeholder="Todos" options={options(USER_STATUS_LABELS)} value={list.filters.status} onChange={(e) => list.setFilter("status", e.target.value)} />
+        <SelectField label="Filtrar por rol" placeholder="Todos" options={options(ROLE_LABELS)} value={list.filters.role} onChange={(e) => list.setFilter("role", e.target.value)} />
+        <SortSelect sort={list.sort} order={list.order} onChange={list.setSort}
+          options={[["email", "asc", "Correo (A-Z)"], ["lastName", "asc", "Apellido (A-Z)"], ["createdAt", "asc", "Más antiguos primero"], ["status", "asc", "Estado"]]} />
+      </ListToolbar>
+      <ErrorMessage message={list.error} />
+      {list.loading && !list.items && <Loading />}
+      {list.items?.length === 0 && <EmptyState>No hay usuarios con esos criterios.</EmptyState>}
+      {!!list.items?.length && (
         <Table head={["Persona", "Estado", "Moodle", "Rol", "Acciones"]} label="Usuarios">
-          {rows.map((u) => (
+          {list.items.map((u) => (
             <Fragment key={u.id}>
               <tr>
                 <Td><span className="font-semibold">{u.firstName} {u.lastName}</span><br /><span className="text-xs muted">{u.email}</span></Td>
@@ -62,12 +73,13 @@ export function UsersPanel({ permissions, selfId }: { permissions: string[]; sel
                 </div></Td>
               </tr>
               {open === u.id && (
-                <tr><Td colSpan={5} className="bg-slate-50 py-3"><UserEnrolments userId={u.id} courses={courses ?? []} onError={setError} /></Td></tr>
+                <tr><Td colSpan={5} className="bg-slate-50 py-3"><UserEnrolments userId={u.id} courses={courses ?? []} onError={list.setError} /></Td></tr>
               )}
             </Fragment>
           ))}
         </Table>
       )}
+      {list.items && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} label="usuarios" />}
     </>
   );
 }

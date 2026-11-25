@@ -104,7 +104,7 @@ test("CMS: formato, imagen, publicación, HTML neutralizado y eliminación", asy
   const admin = await session(browser, "academico", "/admin");
   await admin.getByRole("tab", { name: "Contenidos" }).click();
   await admin.getByRole("button", { name: "Nuevo contenido" }).click();
-  await admin.getByLabel("Estado").selectOption("publicado");
+  await admin.getByLabel("Estado", { exact: true }).selectOption("publicado");
   await admin.getByLabel("Título", { exact: true }).fill(`Noticia E2E ${stamp}`);
   await admin.getByLabel("Ruta (slug)").fill(slug);
   await admin.getByLabel("Resumen").fill("Resumen de la noticia.");
