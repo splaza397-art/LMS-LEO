@@ -1,0 +1,3 @@
+Fase 4.10 - e2e/session-failures.mjs (25/11/2026): 17 de 17 comprobaciones correctas
+M1-M8: cierre con Moodle detenido, reintento y cambio a profesor
+K1-K8: cierre con Keycloak detenido; Keycloak pide la contraseña de la cuenta anterior (no entra solo) y permite reiniciar; el portal y Moodle quedan con el profesor
