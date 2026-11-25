@@ -19,8 +19,8 @@ import org.iinicia.app.data.models.Activity
 import org.iinicia.app.data.models.Course
 
 @Composable
-fun CourseCard(course: Course, open: (Int) -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable { open(course.id) }) {
+fun CourseCard(course: Course, open: (Int, String?) -> Unit) {
+    Card(Modifier.fillMaxWidth().clickable { open(course.id, course.fullname) }) {
         Column(Modifier.padding(16.dp)) {
             Text(course.shortname, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Text(course.fullname, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -35,8 +35,8 @@ fun CourseCard(course: Course, open: (Int) -> Unit) {
 }
 
 @Composable
-fun UpcomingCard(activity: Activity, openCourse: (Int) -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(enabled = activity.courseId != null) { activity.courseId?.let(openCourse) }) {
+fun UpcomingCard(activity: Activity, openCourse: (Int, String?) -> Unit) {
+    Card(Modifier.fillMaxWidth().clickable(enabled = activity.courseId != null) { activity.courseId?.let { openCourse(it, activity.courseName) } }) {
         Column(Modifier.padding(16.dp)) {
             Text(activity.name, fontWeight = FontWeight.SemiBold)
             Text("${activity.courseName ?: ""} · ${formatUnixDate(activity.duedate)}", style = MaterialTheme.typography.bodySmall)

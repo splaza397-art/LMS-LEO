@@ -15,13 +15,13 @@ import org.iinicia.app.ui.components.EmptyState
 import org.iinicia.app.ui.components.ScreenContent
 
 @Composable
-fun CoursesScreen(viewModel: CoursesViewModel, open: (Int) -> Unit) {
+fun CoursesScreen(viewModel: CoursesViewModel, open: (Int, String?) -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { courses -> CourseList(courses, open) }
 }
 
 @Composable
-fun CourseList(courses: List<Course>, open: (Int) -> Unit) {
+fun CourseList(courses: List<Course>, open: (Int, String?) -> Unit) {
     if (courses.isEmpty()) return EmptyState("Aún no tienes cursos asignados.")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(courses, key = { it.id }) { CourseCard(it, open) }

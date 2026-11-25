@@ -4,10 +4,6 @@ import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,17 +21,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.iinicia.app.di.AppContainer
 import org.iinicia.app.features.courses.CourseDetailScreen
@@ -51,15 +48,7 @@ import org.iinicia.app.features.profile.ProfileViewModel
 import org.iinicia.app.ui.components.EventEffect
 import org.iinicia.app.ui.theme.Navy
 
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
-
-private val TABS = listOf(
-    Tab("inicio", "Inicio", Icons.Default.Home),
-    Tab("cursos", "Cursos", Icons.Default.School),
-    Tab("avisos", "Avisos", Icons.Default.Notifications),
-    Tab("perfil", "Perfil", Icons.Default.Person),
-)
-
+/** Área protegida: barra superior, pestañas y el grafo de navegación central. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLogout: () -> Unit, onOpenUrl: (String) -> Unit) {
@@ -67,13 +56,19 @@ fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLo
     val snackbar = remember { SnackbarHostState() }
     val link by deepLink.collectAsStateWithLifecycle()
     val entry by nav.currentBackStackEntryAsState()
-    val route = entry?.destination?.route
+    val destination = entry?.destination
+    val onCourse = destination?.hasRoute<CourseRoute>() == true
+    val openCourse: (Int, String?) -> Unit = { id, title -> nav.navigate(CourseRoute(id, title)) }
 
+    // Los deep links llegan aquí solo con sesión; sin sesión quedan pendientes hasta iniciarla.
     LaunchedEffect(link) {
         val uri = link ?: return@LaunchedEffect
-        when (uri.host) {
-            "curso" -> uri.lastPathSegment?.toIntOrNull()?.let { nav.navigate("curso/$it") }
-            "notificaciones" -> nav.navigate("avisos")
+        when (val route = deepLinkRoute(uri.scheme, uri.host, uri.lastPathSegment)) {
+            null -> Unit
+            is CourseRoute -> nav.navigate(route)
+            // Una pestaña se abre igual que desde la barra inferior; con navigate() simple, al tocar otra pestaña
+            // se restauraba una pila guardada que terminaba en esta y la pantalla no cambiaba.
+            else -> nav.navigateToTab(route)
         }
         deepLink.value = null
     }
@@ -81,42 +76,40 @@ fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLo
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(TABS.firstOrNull { it.route == route }?.label ?: "Curso") },
+                title = { Text(titleFor(destination, entry?.takeIf { onCourse }?.toRoute<CourseRoute>()), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
-                    if (route?.startsWith("curso/") == true) {
-                        IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-                    }
+                    if (onCourse) IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Navy, titleContentColor = Color.White, navigationIconContentColor = Color.White,
                 ),
             )
         },
-        bottomBar = { BottomBar(nav, route) },
+        bottomBar = { BottomBar(nav, destination) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        NavHost(nav, startDestination = "inicio", Modifier.padding(padding)) {
-            composable("inicio") {
+        NavHost(nav, startDestination = HomeRoute, Modifier.padding(padding)) {
+            composable<HomeRoute> {
                 val vm = viewModel { HomeViewModel(container.profiles, container.courses, container.auth) }
                 EventEffect(vm.events, snackbar, onOpenUrl)
-                HomeScreen(vm, openCourse = { nav.navigate("curso/$it") })
+                HomeScreen(vm, openCourse)
             }
-            composable("cursos") {
+            composable<CoursesRoute> {
                 val vm = viewModel { CoursesViewModel(container.courses, container.auth) }
-                CoursesScreen(vm, open = { nav.navigate("curso/$it") })
+                CoursesScreen(vm, openCourse)
             }
-            composable("avisos") {
+            composable<NoticesRoute> {
                 val vm = viewModel { NotificationsViewModel(container.notices, container.auth) }
                 EventEffect(vm.events, snackbar, onOpenUrl)
                 NotificationsScreen(vm)
             }
-            composable("perfil") {
+            composable<ProfileRoute> {
                 val vm = viewModel { ProfileViewModel(container.profiles, container.settings, container.scheduler, container.auth) }
                 ProfileScreen(vm, onLogout)
             }
-            composable("curso/{id}", arguments = listOf(navArgument("id") { type = NavType.IntType })) { back ->
-                val id = back.arguments?.getInt("id") ?: return@composable
-                val vm = viewModel { CourseDetailViewModel(id, container.courses, container.auth) }
+            composable<CourseRoute> { back ->
+                val route = back.toRoute<CourseRoute>()
+                val vm = viewModel { CourseDetailViewModel(route.id, container.courses, container.auth) }
                 EventEffect(vm.events, snackbar, onOpenUrl)
                 CourseDetailScreen(vm)
             }
@@ -124,22 +117,31 @@ fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLo
     }
 }
 
+private fun titleFor(destination: NavDestination?, course: CourseRoute?): String =
+    course?.let { it.title ?: "Curso" }
+        ?: TABS.firstOrNull { tab -> destination?.hasRoute(tab.route::class) == true }?.label
+        ?: "IINICIA"
+
+/**
+ * Pestañas: cada una conserva su estado. "Atrás" desde una pestaña vuelve a Inicio, y desde Inicio sale de la app.
+ */
 @Composable
-private fun BottomBar(nav: NavHostController, route: String?) {
+private fun BottomBar(nav: NavHostController, destination: NavDestination?) {
     NavigationBar {
         TABS.forEach { tab ->
             NavigationBarItem(
-                selected = route == tab.route,
-                onClick = {
-                    nav.navigate(tab.route) {
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                selected = destination?.hasRoute(tab.route::class) == true,
+                onClick = { nav.navigateToTab(tab.route) },
                 icon = { Icon(tab.icon, contentDescription = null) },
                 label = { Text(tab.label) },
             )
         }
     }
+}
+
+/** Cambia de pestaña conservando el estado de cada una (patrón de navegación inferior de Material). */
+fun NavHostController.navigateToTab(route: Any) = navigate(route) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
 }

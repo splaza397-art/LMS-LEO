@@ -22,13 +22,13 @@ import org.iinicia.app.ui.components.ScreenContent
 import org.iinicia.app.ui.components.SectionTitle
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, openCourse: (Int) -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, openCourse: (Int, String?) -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { data -> HomeContent(data, openCourse, viewModel::openCampus) }
 }
 
 @Composable
-fun HomeContent(data: HomeData, openCourse: (Int) -> Unit, openCampus: () -> Unit) {
+fun HomeContent(data: HomeData, openCourse: (Int, String?) -> Unit, openCampus: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Hola, ${data.profile.firstName}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
