@@ -24,8 +24,7 @@
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="IINICIA"
-        android:networkSecurityConfig="${networkConfig}"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Iinicia"
         tools:targetApi="36">
@@ -43,8 +42,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="iinicia" android:host="curso" />
-                <data android:scheme="iinicia" android:host="notificaciones" />
+                <!-- Un atributo por <data>: el filtro acepta iinicia://curso/... e iinicia://notificaciones. -->
+                <data android:scheme="iinicia" />
+                <data android:host="curso" />
+                <data android:host="notificaciones" />
             </intent-filter>
         </activity>
     </application>

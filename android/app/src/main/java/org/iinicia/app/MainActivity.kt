@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -20,6 +21,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.iinicia.app.features.auth.AuthViewModel
+import org.iinicia.app.features.notifications.canPostNotifications
 import org.iinicia.app.navigation.AppRoot
 import org.iinicia.app.ui.theme.IiniciaTheme
 
@@ -42,9 +44,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         deepLink.value = intent?.data
         if (container.auth.signedIn.value) container.scheduler.schedule()
-        if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) { auth.endSession.collect(logoutLauncher::launch) }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { auth.endSession.collect(logoutLauncher::launch) }
+                launch { auth.askNotifications.collect { requestNotificationPermission() } }
+            }
         }
         setContent {
             IiniciaTheme {
@@ -53,9 +57,17 @@ class MainActivity : ComponentActivity() {
                     auth = auth,
                     deepLink = deepLink,
                     onLogin = { loginLauncher.launch(auth.loginIntent()) },
-                    onOpenUrl = { url -> CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(url)) },
+                    onOpenUrl = { url -> CustomTabsIntent.Builder().build().launchUrl(this, url.toUri()) },
+                    onEnableNotifications = ::requestNotificationPermission,
                 )
             }
+        }
+    }
+
+    /** Android 13+: pide el permiso solo si falta. En versiones anteriores no existe y no hay nada que pedir. */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !canPostNotifications(this)) {
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

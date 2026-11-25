@@ -3,6 +3,7 @@ package org.iinicia.app.core.security
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -46,14 +47,14 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
     override val userId: String? get() = state.parsedIdToken?.subject
 
     private val config = AuthorizationServiceConfiguration(
-        Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/auth"),
-        Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/token"),
+        "${BuildConfig.ISSUER_URL}/protocol/openid-connect/auth".toUri(),
+        "${BuildConfig.ISSUER_URL}/protocol/openid-connect/token".toUri(),
         null,
-        Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/logout"),
+        "${BuildConfig.ISSUER_URL}/protocol/openid-connect/logout".toUri(),
     )
 
     override fun loginIntent(): Intent = service.getAuthorizationRequestIntent(
-        AuthorizationRequest.Builder(config, CLIENT_ID, ResponseTypeValues.CODE, Uri.parse(REDIRECT))
+        AuthorizationRequest.Builder(config, CLIENT_ID, ResponseTypeValues.CODE, REDIRECT.toUri())
             .setScope("openid profile email offline_access")
             .setUiLocales("es")
             .build(),
@@ -111,7 +112,7 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
             service.getEndSessionRequestIntent(
                 EndSessionRequest.Builder(config)
                     .setIdTokenHint(it)
-                    .setPostLogoutRedirectUri(Uri.parse(LOGOUT_REDIRECT))
+                    .setPostLogoutRedirectUri(LOGOUT_REDIRECT.toUri())
                     .build(),
             )
         }
@@ -120,7 +121,7 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
     /** La sesion offline sobrevive al cierre en el navegador: se revoca explicitamente en el servidor. */
     private suspend fun revoke(refreshToken: String) = withContext(Dispatchers.IO) {
         runCatching {
-            val uri = Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/revoke")
+            val uri = "${BuildConfig.ISSUER_URL}/protocol/openid-connect/revoke".toUri()
             val connection = (if (BuildConfig.ALLOW_HTTP) LocalhostConnectionBuilder.openConnection(uri) else URL(uri.toString()).openConnection() as HttpURLConnection)
             connection.requestMethod = "POST"
             connection.doOutput = true

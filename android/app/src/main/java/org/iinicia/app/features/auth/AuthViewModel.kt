@@ -28,6 +28,11 @@ class AuthViewModel(private val auth: Authenticator, private val scheduler: Noti
     /** Intent de cierre de sesión en Keycloak que la Activity debe abrir. */
     val endSession: Flow<Intent> = _endSession.receiveAsFlow()
 
+    private val _askNotifications = Channel<Unit>(Channel.CONFLATED)
+
+    /** Momento de pedir el permiso de notificaciones: justo después de iniciar sesión, no al abrir la app. */
+    val askNotifications: Flow<Unit> = _askNotifications.receiveAsFlow()
+
     fun loginIntent(): Intent = auth.loginIntent()
 
     /** data == null: la persona cerró el navegador sin iniciar sesión; no es un error. */
@@ -38,6 +43,7 @@ class AuthViewModel(private val auth: Authenticator, private val scheduler: Noti
                 auth.completeLogin(data)
                 _loginError.value = null
                 scheduler.schedule()
+                _askNotifications.send(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: LoginCancelledException) {

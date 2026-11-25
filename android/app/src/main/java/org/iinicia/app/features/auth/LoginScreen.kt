@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
@@ -30,7 +32,7 @@ import org.iinicia.app.ui.theme.Navy
 fun LoginScreen(error: String?, onLogin: () -> Unit) {
     Surface(color = Navy, modifier = Modifier.fillMaxSize()) {
         Column(
-            Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
+            Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

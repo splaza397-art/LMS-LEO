@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -27,11 +29,14 @@ import org.iinicia.app.ui.components.ConfirmDialog
 import org.iinicia.app.ui.components.ScreenContent
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit) {
+fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit, onEnableNotifications: () -> Unit = {}) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notifications by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { profile ->
-        ProfileContent(profile, notifications, viewModel::setNotificationsEnabled, onLogout)
+        ProfileContent(profile, notifications, { enabled ->
+            viewModel.setNotificationsEnabled(enabled)
+            if (enabled) onEnableNotifications()
+        }, onLogout)
     }
 }
 
@@ -47,7 +52,7 @@ fun ProfileContent(profile: Profile, notifications: Boolean, onNotificationsChan
             onDismiss = { confirmLogout = false },
         )
     }
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("${profile.firstName} ${profile.lastName}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(profile.email)
         Text("Estado: ${profile.statusLabel}")

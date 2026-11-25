@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,7 +51,7 @@ fun CourseDetail(course: Course, openCourse: () -> Unit, openActivity: (Int) -> 
         course.sections.forEach { section ->
             item(key = "s${section.id}") { SectionTitle(section.name) }
             items(section.activities, key = { "a${it.cmid}" }) { activity ->
-                Card(Modifier.fillMaxWidth().clickable { openActivity(activity.cmid) }) {
+                Card(Modifier.fillMaxWidth().clickable(onClickLabel = "Abrir en el campus", role = Role.Button) { openActivity(activity.cmid) }) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(activity.name, fontWeight = FontWeight.SemiBold)

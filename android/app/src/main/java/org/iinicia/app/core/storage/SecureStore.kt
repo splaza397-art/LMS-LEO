@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import androidx.core.content.edit
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -31,12 +32,12 @@ class SecureStore(context: Context) : KeyValueStore {
     @Synchronized
     override fun put(name: String, value: String?) {
         if (value == null) {
-            prefs.edit().remove(name).apply()
+            prefs.edit { remove(name) }
             return
         }
         val cipher = Cipher.getInstance(TRANSFORM).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val data = cipher.iv + cipher.doFinal(value.toByteArray())
-        prefs.edit().putString(name, Base64.encodeToString(data, Base64.NO_WRAP)).apply()
+        prefs.edit { putString(name, Base64.encodeToString(data, Base64.NO_WRAP)) }
     }
 
     @Synchronized
@@ -48,13 +49,13 @@ class SecureStore(context: Context) : KeyValueStore {
             cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, data, 0, IV_SIZE))
             String(cipher.doFinal(data, IV_SIZE, data.size - IV_SIZE))
         } catch (_: Exception) {
-            prefs.edit().remove(name).apply()
+            prefs.edit { remove(name) }
             null
         }
     }
 
     @Synchronized
-    override fun clear() = prefs.edit().clear().apply()
+    override fun clear() = prefs.edit { clear() }
 
     private companion object {
         const val ALIAS = "iinicia_session_key"

@@ -22,7 +22,6 @@ android {
             buildConfigField("String", "API_URL", "\"http://localhost:4000/api/v1\"")
             buildConfigField("String", "ISSUER_URL", "\"http://localhost:8180/realms/iinicia\"")
             buildConfigField("boolean", "ALLOW_HTTP", "true")
-            manifestPlaceholders["networkConfig"] = "@xml/network_security_debug"
         }
         release {
             isMinifyEnabled = true
@@ -31,7 +30,6 @@ android {
             buildConfigField("String", "API_URL", "\"${providers.gradleProperty("iinicia.api.url").get()}\"")
             buildConfigField("String", "ISSUER_URL", "\"${providers.gradleProperty("iinicia.issuer.url").get()}\"")
             buildConfigField("boolean", "ALLOW_HTTP", "false")
-            manifestPlaceholders["networkConfig"] = "@xml/network_security_release"
         }
     }
 

@@ -5,10 +5,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -45,10 +46,13 @@ class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     }
 
     private fun show(id: String, title: String, body: String, link: String?) {
-        val granted = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (!granted) return
+        // Comprobación en el mismo método que notify(), para que lint la reconozca; ver canPostNotifications().
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        if (!NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()) return
         val target = link?.let { COURSE_LINK.find(it)?.groupValues?.get(1) }?.let { "iinicia://curso/$it" } ?: "iinicia://notificaciones"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(target), applicationContext, MainActivity::class.java)
+        val intent = Intent(Intent.ACTION_VIEW, target.toUri(), applicationContext, MainActivity::class.java)
         val pending = PendingIntent.getActivity(applicationContext, id.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = NotificationCompat.Builder(applicationContext, IiniciaApp.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -87,3 +91,15 @@ class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         fun cancel(context: Context) = WorkManager.getInstance(context).cancelUniqueWork("avisos")
     }
 }
+
+/**
+ * ¿Puede la app mostrar notificaciones? En Android 13+ depende del permiso POST_NOTIFICATIONS; antes ese permiso no
+ * existe (checkSelfPermission siempre decía "denegado" y en Android 8 a 12 nunca se mostraba nada) y lo que cuenta es
+ * si la persona no las desactivó en Ajustes.
+ */
+fun canPostNotifications(context: Context): Boolean =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    } else {
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }

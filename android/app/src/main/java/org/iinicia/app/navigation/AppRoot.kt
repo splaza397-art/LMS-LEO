@@ -44,6 +44,7 @@ fun AppRoot(
     deepLink: MutableStateFlow<Uri?>,
     onLogin: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    onEnableNotifications: () -> Unit = {},
 ) {
     val signedIn by auth.signedIn.collectAsStateWithLifecycle()
     val error by auth.loginError.collectAsStateWithLifecycle()
@@ -56,7 +57,7 @@ fun AppRoot(
         val store = session.store
         val owner = remember(store) { object : ViewModelStoreOwner { override val viewModelStore = store } }
         CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-            MainScaffold(container, deepLink, onLogout = auth::logout, onOpenUrl = onOpenUrl)
+            MainScaffold(container, deepLink, onLogout = auth::logout, onOpenUrl = onOpenUrl, onEnableNotifications = onEnableNotifications)
         }
     }
 }

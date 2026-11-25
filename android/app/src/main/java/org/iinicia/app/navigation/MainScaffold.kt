@@ -21,6 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,7 +53,13 @@ import org.iinicia.app.ui.theme.Navy
 /** Área protegida: barra superior, pestañas y el grafo de navegación central. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLogout: () -> Unit, onOpenUrl: (String) -> Unit) {
+fun MainScaffold(
+    container: AppContainer,
+    deepLink: MutableStateFlow<Uri?>,
+    onLogout: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onEnableNotifications: () -> Unit = {},
+) {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val link by deepLink.collectAsStateWithLifecycle()
@@ -76,7 +84,14 @@ fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLo
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(titleFor(destination, entry?.takeIf { onCourse }?.toRoute<CourseRoute>()), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    Text(
+                        titleFor(destination, entry?.takeIf { onCourse }?.toRoute<CourseRoute>()),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     if (onCourse) IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
                 },
@@ -105,7 +120,7 @@ fun MainScaffold(container: AppContainer, deepLink: MutableStateFlow<Uri?>, onLo
             }
             composable<ProfileRoute> {
                 val vm = viewModel { ProfileViewModel(container.profiles, container.settings, container.scheduler, container.auth) }
-                ProfileScreen(vm, onLogout)
+                ProfileScreen(vm, onLogout, onEnableNotifications)
             }
             composable<CourseRoute> { back ->
                 val route = back.toRoute<CourseRoute>()

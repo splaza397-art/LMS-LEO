@@ -15,6 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,9 +36,16 @@ fun NoticeList(notices: List<Notice>, markRead: (String) -> Unit) {
     if (notices.isEmpty()) return EmptyState("Sin avisos.")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(notices, key = { it.id }) { notice ->
-            Card(Modifier.fillMaxWidth().clickable(enabled = notice.readAt == null) { markRead(notice.id) }) {
+            val unread = notice.readAt == null
+            Card(
+                Modifier.fillMaxWidth()
+                    .clickable(enabled = unread, onClickLabel = "Marcar como leído", role = Role.Button) { markRead(notice.id) }
+                    .semantics { stateDescription = if (unread) "No leído" else "Leído" },
+            ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text(notice.title, fontWeight = if (notice.readAt == null) FontWeight.Bold else FontWeight.Normal)
+                    // El estado no depende solo de las negritas: los avisos nuevos llevan la etiqueta "Nuevo".
+                    if (unread) Text("Nuevo", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(notice.title, fontWeight = if (unread) FontWeight.Bold else FontWeight.Normal)
                     Text(notice.body, style = MaterialTheme.typography.bodyMedium)
                 }
             }

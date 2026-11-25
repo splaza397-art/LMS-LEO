@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.iinicia.app.core.common.formatUnixDate
@@ -20,7 +21,7 @@ import org.iinicia.app.data.models.Course
 
 @Composable
 fun CourseCard(course: Course, open: (Int, String?) -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable { open(course.id, course.fullname) }) {
+    Card(Modifier.fillMaxWidth().clickable(onClickLabel = "Abrir curso", role = Role.Button) { open(course.id, course.fullname) }) {
         Column(Modifier.padding(16.dp)) {
             Text(course.shortname, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Text(course.fullname, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -36,7 +37,11 @@ fun CourseCard(course: Course, open: (Int, String?) -> Unit) {
 
 @Composable
 fun UpcomingCard(activity: Activity, openCourse: (Int, String?) -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(enabled = activity.courseId != null) { activity.courseId?.let { openCourse(it, activity.courseName) } }) {
+    Card(
+        Modifier.fillMaxWidth().clickable(enabled = activity.courseId != null, onClickLabel = "Abrir curso", role = Role.Button) {
+            activity.courseId?.let { openCourse(it, activity.courseName) }
+        },
+    ) {
         Column(Modifier.padding(16.dp)) {
             Text(activity.name, fontWeight = FontWeight.SemiBold)
             Text("${activity.courseName ?: ""} · ${formatUnixDate(activity.duedate)}", style = MaterialTheme.typography.bodySmall)
