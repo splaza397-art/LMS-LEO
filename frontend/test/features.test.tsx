@@ -8,6 +8,7 @@ import { missingRules } from "@/features/auth/password-rules";
 import { RegisterForm } from "@/features/auth/register-form";
 import { contentBody } from "@/features/content/content-form";
 import { AdminPanel } from "@/features/dashboard/admin-panel";
+import { dashboardSectionsFor } from "@/features/dashboard/dashboard-sections";
 import { csvCell, toCsv } from "@/features/reports/csv";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -105,5 +106,24 @@ describe("formularios públicos", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.submit(screen.getByRole("button", { name: "Solicitar información" }).closest("form")!);
     expect((await screen.findByRole("alert")).textContent).toMatch(/Demasiados intentos/);
+  });
+});
+
+describe("Mi IINICIA por rol", () => {
+  const view = (role: string) => {
+    const s = dashboardSectionsFor({ roles: [role], permissions: permissionsFor([role]) });
+    return { teaching: s.teaching, courses: s.courses, applications: s.applications, management: s.management.length, upcoming: s.upcoming };
+  };
+  it("cada rol ve solo sus secciones", () => {
+    expect(Object.fromEntries(ROLES.map((r) => [r, view(r)]))).toEqual({
+      superadmin: { teaching: null, courses: true, applications: false, management: 8, upcoming: true },
+      admin_tecnico: { teaching: null, courses: false, applications: false, management: 2, upcoming: false },
+      admin_academico: { teaching: null, courses: true, applications: false, management: 7, upcoming: true },
+      coordinador: { teaching: "supervision", courses: true, applications: false, management: 5, upcoming: true },
+      profesor: { teaching: "groups", courses: false, applications: false, management: 0, upcoming: true },
+      estudiante: { teaching: null, courses: true, applications: false, management: 0, upcoming: true },
+      aspirante: { teaching: null, courses: false, applications: true, management: 0, upcoming: false },
+      soporte: { teaching: null, courses: false, applications: false, management: 1, upcoming: false },
+    });
   });
 });
