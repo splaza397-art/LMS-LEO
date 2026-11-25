@@ -6,7 +6,7 @@ Portal Next.js, backend NestJS, Moodle 5.3 LTS, identidad con Keycloak (OIDC) y 
 | --- | --- |
 | `frontend/` | Portal, Mi IINICIA y panel de gestión (Next.js 16, TypeScript, Tailwind), organizado por funcionalidad (`src/features`) |
 | `backend/` | API, reglas de negocio, RBAC, auditoría e integración con Moodle (NestJS, PostgreSQL) |
-| `android/` | App de estudiantes (Kotlin, Jetpack Compose, AppAuth) |
+| `android/` | App de estudiantes (Kotlin, Jetpack Compose, AppAuth), MVVM por funcionalidad (`app/src/main/java/org/iinicia/app/features`) |
 | `moodle-custom/` | Plugin `local_iinicia` y tema `theme_iinicia`, sin modificar Moodle Core |
 | `infrastructure/` | Docker Compose, Keycloak, PostgreSQL y scripts |
 | `e2e/` | Pruebas de extremo a extremo con Playwright |
@@ -59,6 +59,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb reverse tcp:4000 tcp:4000 && adb reverse tcp:8180 tcp:8180 && adb reverse tcp:8081 tcp:8081
 ```
 
+Con varios dispositivos conectados, agrega `-s <serie>` a cada comando `adb`. Procedimiento completo para un teléfono físico: [documento 15, sección 19](documentation/15-refactorizacion-android.md).
+
 ## Pruebas
 
 ```bash
@@ -66,5 +68,7 @@ cd backend && npm test                 # unitarias
 cd backend && npm run test:integration # con PostgreSQL (servicios encendidos)
 cd backend && npm run test:contracts   # compatibilidad de la API con la referencia previa a la Fase 2
 cd frontend && npm test                # unitarias y de componentes del portal (node --test y Vitest)
+cd android && ./gradlew testDebugUnitTest lintDebug   # unitarias de la app (JVM) y lint
+cd android && ./gradlew assembleDebugAndroidTest     # pruebas de interfaz; se ejecutan en un emulador (documento 15)
 cd e2e && npm install && npx playwright install chromium && npx playwright test
 ```

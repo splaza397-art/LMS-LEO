@@ -4,9 +4,9 @@
 
 | Capa | Implementación |
 |---|---|
-| UI | Jetpack Compose, Material 3, navegación con barra inferior (Inicio, Cursos, Avisos, Perfil) y detalle de curso |
-| Estado | `DashboardViewModel` y `CourseViewModel` con `StateFlow` |
-| Datos | `ApiClient` (OkHttp, solo backend IINICIA) y `Repository` con caché cifrada para uso sin conexión |
+| UI | Jetpack Compose, Material 3, navegación con tipos y barra inferior (Inicio, Cursos, Avisos, Perfil) y detalle de curso (`navigation/`) |
+| Estado | Un ViewModel por pantalla en `features/*` con `StateFlow` de estado inmutable, en un `ViewModelStore` por sesión |
+| Datos | `ApiClient` (OkHttp, solo backend IINICIA, errores clasificados en `AppError`), `IiniciaApi` y repositorios por área con caché cifrada, con dueño y caducidad de 7 días |
 | Sesión | `AuthManager` (AppAuth, código y PKCE, `offline_access`) y `SecureStore` (AES-GCM con llave no exportable en Android Keystore) |
 | Notificaciones | `NoticeWorker` (WorkManager, cada 15 min con red). Las que enlazan a `/mi-iinicia/cursos/{id}` abren ese curso |
 | Enlaces profundos | `iinicia://curso/{id}`, `iinicia://notificaciones` |
@@ -42,5 +42,9 @@ Requisitos: SDK mínimo 26 (Android 8.0), compilación con SDK 37 y destino SDK 
 Requieren un proyecto Firebase y `google-services.json`. El backend ya guarda los dispositivos (`POST /me/devices`). Falta enviar a FCM en `NotificationsService.create()` y registrar el token en la app.
 
 ## Verificado
+
+Fase 4 (refactorización MVVM): 56 pruebas unitarias y 12 de interfaz en el emulador, y recorrido manual en el emulador con los servicios de DEV. **Sin probar en el teléfono físico.** Detalle en el [documento 15](15-refactorizacion-android.md).
+
+Antes de la Fase 4:
 
 En el teléfono físico del usuario, con la versión anterior a la sesión larga y al logotipo: inicio de sesión con la misma cuenta del portal, curso autorizado, entrada al campus sin segunda contraseña, avisos, perfil y cierre de sesión. La versión actual compila y está pendiente de prueba en el teléfono.

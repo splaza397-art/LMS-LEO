@@ -22,7 +22,7 @@ App Android ─────────┼────────────�
 |---|---|
 | `backend/` | API NestJS 11 en 12 módulos (`src/modules/*`), migraciones SQL (`src/db/migrations`) y pruebas (`test/`) |
 | `frontend/` | Portal Next.js 16 (App Router), por funcionalidad en `src/features/*`. BFF en `src/app/api/*`, sesión en `src/lib/session-core.ts`, `src/proxy.ts` |
-| `android/` | App Kotlin y Compose con AppAuth (PKCE) |
+| `android/` | App Kotlin y Compose con AppAuth (PKCE), MVVM por funcionalidad. Ver la sección Android |
 | `moodle-custom/` | Plugin `local_iinicia` (servicios web, SSO, CLI) y tema `theme_iinicia`. **Moodle Core no se modifica** |
 | `infrastructure/` | Docker Compose, realm y temas de Keycloak, imagen de Moodle, scripts de configuración y respaldo |
 | `e2e/` | Pruebas Playwright contra los servicios reales |
@@ -70,6 +70,28 @@ Detalle en [`documentation/14-refactorizacion-frontend.md`](documentation/14-ref
   - Las E2E de axe (`a11y-seo`, `responsive-a11y`) deben quedar en 0 violaciones y sin desborde a 360, 768, 1024 y 1440 px.
 - **Compilador de React:** no usar `useCallback` ni `useMemo` manuales, ni `setState` síncrono en efectos (ESLint lo marca).
 
+## Android
+
+Detalle en [`documentation/15-refactorizacion-android.md`](documentation/15-refactorizacion-android.md). Paquete `org.iinicia.app`, un solo módulo Gradle.
+
+- **Capas:**
+  - `features/<funcionalidad>` contiene Screen, ViewModel y estado inmutable.
+  - `data/repositories` usa `data/remote/IiniciaApi` (solo endpoints de `/api/v1`) y `data/local/OfflineCache`.
+  - `core/` reúne red, sesión, almacén y utilidades.
+  - `di/AppContainer` arma todo a mano (sin Hilt).
+  - No agregar capas `domain/` ni casos de uso vacíos.
+- **Interfaz sin red ni credenciales:** las pantallas no hacen solicitudes ni tocan tokens, preferencias o WorkManager; lo hacen sus ViewModels y repositorios. Las acciones de una sola vez van como `UiEvent`.
+- **Errores:** usar `AppError` y `friendlyMessage`. Solo los errores pasajeros (`transient`) muestran la copia guardada; un 403 o un 404 nunca se ocultan con datos viejos. Sin reintentos automáticos de escrituras y sin aumentar tiempos de espera.
+- **Sesión:**
+  - Los tokens solo existen en `SecureStore` (Android Keystore). Nunca registrar tokens ni incluirlos en mensajes.
+  - La caché y los valores en memoria llevan dueño (`Session.userId`), y los ViewModels del área protegida viven en el `ViewModelStore` de la sesión: otra cuenta nunca debe ver datos de la anterior.
+- **Red:** release solo HTTPS (`src/main/res/xml/network_security_config.xml`). HTTP solo hacia `localhost` en `src/debug`. No desactivar la validación de certificados.
+- **Pruebas:**
+  - `./gradlew testDebugUnitTest` (JVM). Los dobles están en `src/sharedTest`, con datos ficticios.
+  - Pruebas de interfaz en `src/androidTest`. Si hay un teléfono conectado, ejecutarlas solo en el emulador: `adb -s emulator-5554 install` de los dos APK y `am instrument -w org.iinicia.app.test/androidx.test.runner.AndroidJUnitRunner`.
+  - Lint sin supresiones.
+- **Dispositivos:** no instalar nada en un teléfono físico sin autorización.
+
 ## Seguridad (no negociable)
 
 - Los 8 roles y la matriz RBAC viven en `backend/src/modules/auth/permissions.ts`. Los roles se leen de PostgreSQL en cada solicitud.
@@ -108,7 +130,7 @@ npm test && npm run typecheck && npx eslint .   # node --test y Vitest (componen
 # Extremo a extremo (servicios, backend y portal encendidos)
 cd e2e && npx playwright test
 # Android
-cd android && ./gradlew assembleDebug lintDebug
+cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest
 ```
 
 ## Restricciones para asistentes de IA
