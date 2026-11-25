@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ApplyButton } from "@/features/admissions/apply-button";
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: PageProps<"/oferta/[slug]">):
   const { slug } = await params;
   const program = await publicGet<Program>(`/programs/${encodeURIComponent(slug)}`);
   if (!program) return { title: "Programa no encontrado", robots: { index: false } };
-  return { title: program.name, description: program.summary, alternates: { canonical: `/oferta/${slug}` } };
+  return pageMetadata({ title: program.name, description: program.summary, path: `/oferta/${slug}`, image: program.imageUrl });
 }
 
 async function Apply({ programId }: { programId: string }) {

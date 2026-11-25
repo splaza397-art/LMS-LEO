@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
 import { ProgramGrid } from "@/features/programs/program-grid";
 
-export const metadata: Metadata = { title: "Oferta académica" };
+export const metadata: Metadata = pageMetadata({ title: "Oferta académica", description: "Cursos, diplomados, certificaciones y carreras en línea de IINICIA.", path: "/oferta" });
 
 export default function OfertaPage() {
   return (

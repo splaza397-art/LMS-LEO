@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Loading, Unavailable } from "@/components/feedback/status";
 import { publicGet } from "@/lib/api/server";
 import type { ContentItem } from "@/types/api";
 
-export const metadata: Metadata = { title: "Universidad", description: "Quiénes somos, modelo educativo, autoridades y docentes de IINICIA.", alternates: { canonical: "/universidad" } };
+export const metadata: Metadata = pageMetadata({ title: "Universidad", description: "Quiénes somos, modelo educativo, autoridades y docentes de IINICIA.", path: "/universidad" });
 const LEGAL = new Set(["aviso-privacidad", "terminos"]);
 const PEOPLE = [
   ["/universidad/autoridades", "Autoridades", "Quienes dirigen la institución."],

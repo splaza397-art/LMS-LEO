@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
 import { HomeNews } from "@/features/content/public-content";
 import { ProgramGrid } from "@/features/programs/program-grid";
+
+/** Portada: título completo (sin la plantilla "%s | IINICIA"), canónica y Open Graph. */
+export const metadata: Metadata = {
+  ...pageMetadata({ title: "IINICIA – Instituto de Innovación y Ciencias Aplicadas", description: "Tu educación comienza hoy, estés donde estés. Cursos, diplomados, certificaciones y carreras en línea del Instituto de Innovación y Ciencias Aplicadas.", path: "/" }),
+  title: { absolute: "IINICIA – Instituto de Innovación y Ciencias Aplicadas" },
+};
+
 
 // Textos tomados del sitio institucional vigente (iinicia.org).
 const WHY = [

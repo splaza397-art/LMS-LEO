@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
 import { PeopleList } from "@/features/content/public-content";
 
-export const metadata: Metadata = { title: "Autoridades", description: "Conoce a las autoridades de IINICIA.", alternates: { canonical: "/universidad/autoridades" } };
+export const metadata: Metadata = pageMetadata({ title: "Autoridades", description: "Conoce a las autoridades de IINICIA.", path: "/universidad/autoridades" });
 
 export default function AutoridadesPage() {
   return (

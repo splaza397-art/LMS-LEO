@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
@@ -12,13 +13,7 @@ export async function generateMetadata({ params }: PageProps<"/noticias/[slug]">
   const { slug } = await params;
   const item = await load(slug);
   if (!item) return { title: "Noticia no encontrada", robots: { index: false } };
-  const description = item.seoDescription || item.summary;
-  return {
-    title: item.seoTitle || item.title,
-    description,
-    alternates: { canonical: `/noticias/${slug}` },
-    openGraph: { type: "article", title: item.title, description, ...(item.imageUrl ? { images: [item.imageUrl] } : {}) },
-  };
+  return pageMetadata({ title: item.seoTitle || item.title, description: item.seoDescription || item.summary, path: `/noticias/${slug}`, image: item.imageUrl, type: "article" });
 }
 
 async function Detail({ params }: { params: Promise<{ slug: string }> }) {

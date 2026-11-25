@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
 import { PeopleList } from "@/features/content/public-content";
 
-export const metadata: Metadata = { title: "Docentes", description: "Conoce a la planta docente de IINICIA.", alternates: { canonical: "/universidad/docentes" } };
+export const metadata: Metadata = pageMetadata({ title: "Docentes", description: "Conoce a la planta docente de IINICIA.", path: "/universidad/docentes" });
 
 export default function DocentesPage() {
   return (

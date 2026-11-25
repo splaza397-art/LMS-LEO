@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { RegisterForm } from "@/features/auth/register-form";
 
-export const metadata: Metadata = { title: "Registro" };
+export const metadata: Metadata = pageMetadata({ title: "Registro", description: "Crea tu cuenta IINICIA para solicitar admisión a un programa.", path: "/registro" });
 
 export default function RegistroPage() {
   return (

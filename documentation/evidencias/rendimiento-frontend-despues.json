@@ -1,0 +1,57 @@
+{
+  "fecha": "2026-11-25T00:37:27.482Z",
+  "corridas": 3,
+  "nota": "Mediana de 3 cargas con caché vacía, PC de desarrollo",
+  "resultados": [
+    {
+      "page": "inicio",
+      "path": "/",
+      "jsKB": 237,
+      "requests": 30,
+      "ttfbMs": 13,
+      "domContentLoadedMs": 344,
+      "loadMs": 493,
+      "readyMs": 1619
+    },
+    {
+      "page": "oferta",
+      "path": "/oferta",
+      "jsKB": 81,
+      "requests": 36,
+      "ttfbMs": 17,
+      "domContentLoadedMs": 182,
+      "loadMs": 426,
+      "readyMs": 1689
+    },
+    {
+      "page": "programa",
+      "path": "/oferta/base-de-datos",
+      "jsKB": 179,
+      "requests": 32,
+      "ttfbMs": 22,
+      "domContentLoadedMs": 197,
+      "loadMs": 388,
+      "readyMs": 1342
+    },
+    {
+      "page": "mi-iinicia (estudiante)",
+      "path": "/mi-iinicia",
+      "jsKB": 10,
+      "requests": 31,
+      "ttfbMs": 15,
+      "domContentLoadedMs": 749,
+      "loadMs": 749,
+      "readyMs": 1616
+    },
+    {
+      "page": "panel (superadmin)",
+      "path": "/admin",
+      "jsKB": 28,
+      "requests": 37,
+      "ttfbMs": 12,
+      "domContentLoadedMs": 146,
+      "loadMs": 169,
+      "readyMs": 1151
+    }
+  ]
+}

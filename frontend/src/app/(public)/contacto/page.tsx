@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
 import { ContentBody } from "@/features/content/public-content";
 import { publicGet } from "@/lib/api/server";
 import type { ContentItem } from "@/types/api";
 
-export const metadata: Metadata = { title: "Contacto" };
+export const metadata: Metadata = pageMetadata({ title: "Contacto", description: "Datos de contacto del Instituto de Innovación y Ciencias Aplicadas (IINICIA).", path: "/contacto" });
 
 async function Channels() {
   const items = await publicGet<ContentItem[]>("/content/contacto");

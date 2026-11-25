@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/feedback/status";
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: PageProps<"/universidad/[slug
   const { slug } = await params;
   const item = await load(slug);
   if (!item) return { title: "Página no encontrada", robots: { index: false } };
-  return { title: item.seoTitle || item.title, description: item.seoDescription || item.summary, alternates: { canonical: `/universidad/${slug}` } };
+  return pageMetadata({ title: item.seoTitle || item.title, description: item.seoDescription || item.summary, path: `/universidad/${slug}`, image: item.imageUrl });
 }
 
 async function Detail({ params }: { params: Promise<{ slug: string }> }) {

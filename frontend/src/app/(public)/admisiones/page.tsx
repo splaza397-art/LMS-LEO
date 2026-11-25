@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Suspense } from "react";
 import { InfoRequestForm } from "@/features/admissions/info-request-form";
@@ -7,7 +8,7 @@ import { FaqList } from "@/features/content/public-content";
 import { publicGet } from "@/lib/api/server";
 import type { Program } from "@/types/api";
 
-export const metadata: Metadata = { title: "Admisiones", description: "Conoce el proceso de admisión de IINICIA y solicita información.", alternates: { canonical: "/admisiones" } };
+export const metadata: Metadata = pageMetadata({ title: "Admisiones", description: "Conoce el proceso de admisión de IINICIA y solicita información.", path: "/admisiones" });
 
 const STEPS = [
   "Crea tu cuenta y confirma tu correo.",
