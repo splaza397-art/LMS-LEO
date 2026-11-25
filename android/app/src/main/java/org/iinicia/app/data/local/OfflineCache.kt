@@ -25,6 +25,9 @@ class OfflineCache(
     @Serializable
     private class Entry(val owner: String, val savedAt: Long, val data: JsonElement)
 
+    /** Persona dueña de los datos que se leen ahora (la de la sesión actual). */
+    fun currentOwner(): String? = owner()
+
     fun <T> save(key: String, serializer: KSerializer<T>, value: T) {
         val who = owner() ?: return
         val entry = Entry(who, clock(), json.encodeToJsonElement(serializer, value))

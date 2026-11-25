@@ -15,6 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         manifestPlaceholders["appAuthRedirectScheme"] = "org.iinicia.app"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -36,6 +37,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // Dobles de prueba compartidos por las pruebas locales y las instrumentadas.
+    sourceSets {
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
+    }
+
+    testOptions {
+        // Las pruebas locales (JVM) usan clases de Android solo como tipos (Intent en AuthViewModel); no las ejecutan.
+        unitTests.isReturnDefaultValues = true
     }
 
     compileOptions {
@@ -60,4 +72,18 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // Pruebas locales (JVM): mismas versiones que las dependencias de la app.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver3:5.1.0")
+
+    // Pruebas instrumentadas de Compose (emulador o teléfono).
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    // Espresso 3.5 (el que trae Compose UI Test) falla en Android 17: usa InputManager.getInstance por reflexión.
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

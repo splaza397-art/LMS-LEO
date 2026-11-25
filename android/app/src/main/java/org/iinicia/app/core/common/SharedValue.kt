@@ -16,10 +16,12 @@ data class Fetched<out T>(val data: T, val savedAt: Long? = null) {
  * - get() reutiliza un valor reciente de la red; get(force = true) vuelve a pedirlo.
  * - Las llamadas simultáneas esperan a la primera y reciben su resultado, en vez de repetir la solicitud.
  * - Un valor salido de la caché nunca cuenta como reciente: la siguiente llamada vuelve a intentar la red.
+ * - Un valor de otra persona (owner distinto) nunca se reutiliza, aunque aún no se haya borrado al cerrar sesión.
  */
 class SharedValue<T>(
     private val maxAgeMs: Long = 30_000,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val owner: () -> String? = { null },
     private val load: suspend () -> Fetched<T>,
 ) {
     private val mutex = Mutex()
@@ -27,14 +29,29 @@ class SharedValue<T>(
     val state: StateFlow<Fetched<T>?> = _state.asStateFlow()
 
     @Volatile private var loadedAt = Long.MIN_VALUE
+    @Volatile private var loadedFor: String? = null
+
+    /** Cuenta las cargas terminadas: si cambió mientras se esperaba el turno, otra llamada ya trajo el dato. */
+    @Volatile private var loads = 0L
 
     suspend fun get(force: Boolean = false): Fetched<T> {
-        val askedAt = clock()
+        val seen = loads
         return mutex.withLock {
             val current = _state.value
-            val reusable = current != null && !current.fromCache &&
-                (loadedAt >= askedAt || (!force && clock() - loadedAt < maxAgeMs))
-            if (reusable) current!! else load().also { _state.value = it; loadedAt = clock() }
+            val loadedWhileWaiting = loads != seen
+            val reusable = current != null && !current.fromCache && loadedFor == owner() &&
+                (loadedWhileWaiting || (!force && clock() - loadedAt < maxAgeMs))
+            if (reusable) {
+                current!!
+            } else {
+                val who = owner()
+                load().also {
+                    loadedFor = who
+                    _state.value = it
+                    loadedAt = clock()
+                    loads++
+                }
+            }
         }
     }
 

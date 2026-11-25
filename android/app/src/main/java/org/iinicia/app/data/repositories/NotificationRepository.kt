@@ -9,7 +9,7 @@ import org.iinicia.app.data.remote.IiniciaApi
 
 /** Avisos del portal: los muestra la pestaña Avisos y los revisa el worker en segundo plano. */
 class NotificationRepository(private val api: IiniciaApi, private val cache: OfflineCache) {
-    private val shared = SharedValue { networkFirst(cache, "notices", ListSerializer(Notice.serializer())) { api.notifications() } }
+    private val shared = SharedValue(owner = cache::currentOwner) { networkFirst(cache, "notices", ListSerializer(Notice.serializer())) { api.notifications() } }
 
     suspend fun notices(force: Boolean = false): Fetched<List<Notice>> = shared.get(force)
 
