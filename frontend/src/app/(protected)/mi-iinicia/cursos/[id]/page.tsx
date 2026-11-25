@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CampusButton } from "@/components/portal-forms";
+import { CampusButton } from "@/features/courses/campus-button";
 import { Loading } from "@/components/feedback/status";
 import { privateGet } from "@/lib/api/server";
 import type { Course } from "@/types/api";

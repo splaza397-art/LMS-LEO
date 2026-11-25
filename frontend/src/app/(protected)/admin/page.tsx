@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { AdminPanel } from "@/components/admin-panel";
 import { Loading } from "@/components/feedback/status";
+import { ADMIN_PERMISSIONS } from "@/config/admin-sections";
+import { AdminPanel } from "@/features/dashboard/admin-panel";
 import { getMe } from "@/lib/api/server";
 
 export const metadata: Metadata = { title: "Panel de gestión", robots: { index: false } };
 
-const ADMIN_PERMISSIONS = ["users:read", "applications:review", "programs:manage", "content:manage", "audit:read", "notifications:send", "reports:read", "info_requests:manage"];
-
+/** Acceso por URL directa: sin sesión lleva a iniciar sesión; sin permisos de gestión, a Mi IINICIA. */
 async function Gate() {
   const me = await getMe();
   if (!me) redirect("/auth/login?returnTo=/admin");

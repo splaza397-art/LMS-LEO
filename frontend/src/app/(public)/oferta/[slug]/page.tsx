@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ApplyButton } from "@/components/portal-forms";
+import { ApplyButton } from "@/features/admissions/apply-button";
 import { Loading } from "@/components/feedback/status";
 import { ContentBody } from "@/features/content/public-content";
 import { getMe, publicGet } from "@/lib/api/server";

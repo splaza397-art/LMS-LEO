@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { InfoRequestForm } from "@/components/portal-forms";
+import { InfoRequestForm } from "@/features/admissions/info-request-form";
 import { Loading } from "@/components/feedback/status";
 import { FaqList } from "@/features/content/public-content";
 import { publicGet } from "@/lib/api/server";
