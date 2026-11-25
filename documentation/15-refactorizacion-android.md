@@ -9,7 +9,7 @@ Rama: `refactor/android-modular-architecture`, creada desde `main` después de i
 | Compila | `assembleDebug` y `assembleRelease` (sin firmar) | PC de desarrollo |
 | Pruebas automáticas | 56 unitarias (JVM) y 12 de interfaz Compose | JVM y emulador Pixel 7 con Android 17 (API 37) |
 | Probado a mano con servicios reales | Inicio de sesión con Keycloak, cursos, detalle, avisos, perfil, cierre de sesión, *deep link*, Moodle detenido y recuperación, entrada al campus | Emulador, con `adb reverse` contra el backend, Keycloak y Moodle de DEV |
-| Teléfono físico | **No verificado en esta fase.** Hay un teléfono conectado por USB, pero no se instaló nada sin tu autorización | — |
+| Teléfono físico | **Fase 4.9:** instalado y probado en un ZTE con Android 10. Se encontró un defecto crítico de la plataforma (sesión de Moodle de la cuenta anterior); ver la sección Fase 4.9 | Teléfono con `adb reverse` |
 
 ## 1. Estado inicial
 
@@ -402,6 +402,76 @@ En el teléfono, `localhost` es el propio teléfono, no la PC. El backend escuch
 | Commit de esta etapa | 4.8 | Documentación, capturas, validación final |
 
 La rama no se ha integrado en `main`: espera tu autorización. La Fase 5 no ha comenzado.
+
+## Fase 4.9 · Validación en teléfono físico (25/11/2026)
+
+**Dispositivo:** ZTE 9000 con Android 10 (API 29), arm64-v8a, 1080x2340.
+- Ya tenía IINICIA debug instalada. Se actualizó con `adb install -r`, conservando los datos, con la misma firma (llave de depuración de esta PC).
+- APK: el mismo de la rama (`assembleDebug` UP-TO-DATE).
+- Conexión: `adb reverse` de 4000 (API), 8180 (Keycloak) y 8081 (Moodle). El backend siguió en `127.0.0.1`; no se expuso nada a la red.
+- Las contraseñas de las cuentas demo se inyectaron por ADB, con tu autorización, sin capturas mientras estaban escritas.
+
+**Ajustes temporales del teléfono, todos restaurados al terminar:**
+- rotación (`accelerometer_rotation` y `user_rotation`, originales 0 y 0);
+- tamaño de fuente (sin valor original; quedó en 1.0, el predeterminado);
+- pantalla activa por USB (`stay_on_while_plugged_in`, original 0).
+
+Se usó la interfaz de depuración de Brave por USB solo para leer cookies de `localhost:8180` y el nombre de usuario de la pestaña de Moodle local. Se retiró al terminar.
+
+| Prueba | Resultado en el teléfono |
+|---|---|
+| Instalación y apertura | Correcto. Arranque en frío de 4,3 s; 988 ms tras cerrar y reabrir. Sin diálogo de permiso al abrir |
+| Inicio de sesión con Keycloak (AppAuth, Brave como navegador predeterminado) | Correcto |
+| Cursos, detalle, Avisos, Perfil, navegación y "Atrás" | Correcto. En Android 10, uiautomator informa límites vacíos para las etiquetas de las pestañas (limitación de la herramienta; se tocaron por coordenadas) |
+| *Deep links* `iinicia://curso/3` e `iinicia://notificaciones`, y cambio de pestaña después | Correcto. Un enlace inválido no navega |
+| **Notificaciones en Android 10 (A5)** | **Correcto:** canal `avisos` creado (importancia 3); un aviso ficticio se mostró como notificación y al tocarla abrió el curso. El código anterior nunca las mostraba en esta versión |
+| Sin conexión al backend (se quitó el `adb reverse` de 4000) y recuperación | Correcto: copia con fecha y luego datos actuales |
+| Moodle detenido y recuperación | Correcto: copia guardada con aviso; tras iniciar Moodle, la primera actualización cargó los datos |
+| Segundo plano, y cerrar y reabrir | Correcto. Se conserva la sesión. Hallazgo menor **A17**: las listas no se actualizan solas al volver del segundo plano (también ocurría antes) |
+| Rotación a horizontal y de vuelta | Correcto: contenido desplazable y estado conservado |
+| Fuente 1,3x | Correcto: Perfil y "Cerrar sesión" visibles |
+| Cambio de cuenta en la app (estudiante → aspirante) tras un cierre normal | Correcto: Keycloak pidió credenciales, y el aspirante no vio el curso, el aviso ni el correo del estudiante |
+| Acceso a Moodle | Funciona, pero Keycloak pide la contraseña otra vez (ver la causa abajo) |
+| **Moodle tras cambiar de cuenta** | **Falla crítica:** ver abajo |
+| TalkBack | No ejecutado: se detuvo la validación por el defecto crítico |
+| Android 8 o 9, 12 y 13+ en emulador | No disponible: solo hay imagen de Android 17. Android 10 queda verificado en el teléfono |
+| Cosmético | La fecha del aviso sin conexión termina en "p. m.." (doble punto) |
+
+### Causa del segundo inicio de sesión en Moodle (R5, confirmada)
+
+**No se debe a la memoria del emulador.** Pasa igual en el teléfono, con Brave vivo (mismo PID durante toda la prueba).
+
+**Evidencia:**
+1. AppAuth y el campus usan Brave, el navegador predeterminado, en el mismo contexto de cookies; AppAuth 0.11.1 no usa navegación efímera.
+2. Tras el inicio de sesión de la app, Brave sí tiene `KEYCLOAK_IDENTITY`. Brave acepta cookies `Secure` en `http://localhost`.
+3. Al abrir el campus, Keycloak **borra** `KEYCLOAK_IDENTITY` y muestra el formulario.
+4. Reproducido con `curl` y la cuenta demo:
+   - si la app canjea el código con `offline_access`, la siguiente solicitud de Moodle con la misma cookie recibe el formulario (`Set-Cookie: KEYCLOAK_IDENTITY=; Max-Age=0`);
+   - sin `offline_access`, Keycloak redirige a Moodle con código, sin contraseña.
+
+**Causa:** canjear el código con `offline_access` deja inválida la sesión del navegador. Moodle no agrega `prompt` y usa el mismo host.
+
+Concuerda con el documento 06: la versión del teléfono anterior a la "sesión larga" entraba sin segunda contraseña. Queda para la Fase 5, sin debilitar la autenticación.
+
+### Defecto crítico: Moodle conserva la sesión de la cuenta anterior
+
+**Reproducido en el teléfono:**
+- el estudiante entra al campus;
+- se cierra la sesión de la app;
+- entra el profesor (Keycloak pide credenciales y la app muestra correctamente al profesor);
+- "Entrar al Campus" abre Moodle **con la sesión de "Demo Estudiante"**, sin pedir nada.
+
+**También ocurre en el portal web** (Playwright, mismo navegador): después de que el estudiante sale del portal y entra el profesor, Moodle sigue mostrando "Demo Estudiante".
+
+**Causa:**
+- La sesión de Moodle (`MoodleSession` en el navegador) sobrevive al cierre de sesión de IINICIA: el cierre en Keycloak no se propaga a Moodle.
+- `local/iinicia/sso.php` redirige a cualquier sesión de Moodle abierta (`isloggedin()`) sin comprobar que sea de la persona que pidió el enlace.
+
+**No es una regresión de la Fase 4:** el código del campus y del cierre de sesión es el mismo que antes. Pero expone información académica de una cuenta a otra en dispositivos compartidos.
+
+**Otro caso relacionado:** un cierre de sesión interrumpido (el teléfono se bloqueó a la mitad) no revocó la sesión *offline* ni cerró la del navegador, y el siguiente "Iniciar sesión" entró sin credenciales a la cuenta anterior. Con un cierre completo, la sesión en línea y la *offline* se eliminan (comprobado en Keycloak: 1 → 0 y 3 → 2).
+
+**Estado:** la integración de la Fase 4 en `main` queda **detenida** hasta tu decisión, según los criterios acordados. No se hizo el diagnóstico de PostgreSQL ni se inició la Fase 5.
 
 ## 21. Riesgos y pendientes
 
