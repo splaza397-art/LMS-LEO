@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import org.iinicia.app.core.network.AppError
 import org.iinicia.app.core.security.Authenticator
+import org.iinicia.app.core.security.LoginCancelledException
 import org.iinicia.app.features.notifications.NoticeScheduler
 
 /** Inicio y cierre de sesión. La Activity solo lanza los intents de AppAuth y entrega los resultados aquí. */
@@ -38,6 +40,10 @@ class AuthViewModel(private val auth: Authenticator, private val scheduler: Noti
                 scheduler.schedule()
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: LoginCancelledException) {
+                _loginError.value = null
+            } catch (e: AppError) {
+                _loginError.value = "No se pudo iniciar sesión. ${e.message}"
             } catch (_: Exception) {
                 _loginError.value = "No se pudo iniciar sesión. Intenta de nuevo."
             }

@@ -35,13 +35,14 @@ class AppContainer(
     store: KeyValueStore,
     val scheduler: NoticeScheduler,
 ) {
-    private val cache = OfflineCache(store, AppJson)
+    private val cache = OfflineCache(store, AppJson, owner = { auth.userId })
     val profiles = ProfileRepository(api, cache)
     val courses = CourseRepository(api, cache)
     val notices = NotificationRepository(api, cache)
     val settings = SettingsRepository(store)
 
     init {
+        OfflineCache.LEGACY_KEYS.forEach { store.put(it, null) }
         // Al cerrar o vencer la sesión se olvida lo que hay en memoria: la siguiente cuenta no ve datos de la anterior.
         auth.signedIn.filter { !it }.onEach { clearUserData() }.launchIn(CoroutineScope(SupervisorJob() + Dispatchers.Default))
     }
@@ -54,6 +55,9 @@ class AppContainer(
 
     companion object {
         fun create(context: Context): AppContainer {
+            require(BuildConfig.API_URL.startsWith("https://") || (BuildConfig.ALLOW_HTTP && BuildConfig.API_URL.startsWith("http://localhost:"))) {
+                "La API debe usar HTTPS; HTTP solo hacia localhost en debug"
+            }
             val store = SecureStore(context)
             val auth = AuthManager(context, store)
             return AppContainer(auth, HttpIiniciaApi(ApiClient(auth, BuildConfig.API_URL)), store, WorkManagerNoticeScheduler(context))

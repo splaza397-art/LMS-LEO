@@ -19,6 +19,7 @@ import net.openid.appauth.EndSessionRequest
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.connectivity.ConnectionBuilder
 import org.iinicia.app.BuildConfig
+import org.iinicia.app.core.network.AppError
 import org.iinicia.app.core.storage.SecureStore
 import java.net.HttpURLConnection
 import java.net.URL
@@ -41,6 +42,9 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
     private val _signedIn = MutableStateFlow(state.isAuthorized)
     override val signedIn: StateFlow<Boolean> = _signedIn
 
+    /** Identificador de la persona (claim sub del token de identidad); se conoce aun sin conexión. */
+    override val userId: String? get() = state.parsedIdToken?.subject
+
     private val config = AuthorizationServiceConfiguration(
         Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/auth"),
         Uri.parse("${BuildConfig.ISSUER_URL}/protocol/openid-connect/token"),
@@ -56,13 +60,17 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
     )
 
     override suspend fun completeLogin(data: Intent) = mutex.withLock {
+        // AppAuth ya validó que el parámetro state del callback corresponde a la solicitud enviada.
         val response = AuthorizationResponse.fromIntent(data)
         val error = AuthorizationException.fromIntent(data)
-        if (response == null) throw error ?: IllegalStateException("Inicio de sesión cancelado")
+        if (response == null) {
+            if (error == null || error == AuthorizationException.GeneralErrors.USER_CANCELED_AUTH_FLOW) throw LoginCancelledException()
+            throw error.toAppErrorOr { error }
+        }
         val fresh = AuthState(response, error)
         val tokens = suspendCancellableCoroutine { cont ->
             service.performTokenRequest(response.createTokenExchangeRequest()) { result, ex ->
-                if (result != null) cont.resume(result) else cont.resumeWithException(ex ?: IllegalStateException("Sin tokens"))
+                if (result != null) cont.resume(result) else cont.resumeWithException(ex?.toAppErrorOr { ex } ?: IllegalStateException("Sin tokens"))
             }
         }
         fresh.update(tokens, null)
@@ -86,10 +94,12 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         token.getOrElse { error ->
             val ex = error as? AuthorizationException
             if (ex?.type == AuthorizationException.TYPE_OAUTH_TOKEN_ERROR) {
+                // Keycloak rechazó el refresh token (vencido, revocado o sesión cerrada en otro lugar).
                 clearLocked()
                 throw SessionExpiredException()
             }
-            throw error
+            // Sin red al renovar: es un error transitorio, la pantalla puede mostrar la copia guardada.
+            throw ex?.toAppErrorOr { error } ?: error
         }
     }
 
@@ -131,6 +141,13 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
     }
 
     private fun persist() = store.put(KEY, state.jsonSerializeString())
+
+    /** Fallas de red o del servidor de identidad como AppError; el resto se deja tal cual. */
+    private inline fun AuthorizationException.toAppErrorOr(other: () -> Throwable): Throwable = when {
+        this == AuthorizationException.GeneralErrors.NETWORK_ERROR -> AppError.Network()
+        this == AuthorizationException.GeneralErrors.SERVER_ERROR -> AppError.ServiceUnavailable()
+        else -> other()
+    }
 
     private object LocalhostConnectionBuilder : ConnectionBuilder {
         override fun openConnection(uri: Uri): HttpURLConnection {

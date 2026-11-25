@@ -5,9 +5,15 @@ import kotlinx.coroutines.flow.StateFlow
 
 class SessionExpiredException : Exception("La sesión expiró")
 
+/** La persona cerró el navegador sin iniciar sesión: no es un error que haya que mostrar. */
+class LoginCancelledException : Exception("Inicio de sesión cancelado")
+
 /** Lo que la capa de datos necesita de la sesión: un token vigente y poder cerrarla localmente. */
 interface Session {
     val signedIn: StateFlow<Boolean>
+
+    /** Persona de la sesión actual (null sin sesión). Sirve para que la caché nunca muestre datos de otra cuenta. */
+    val userId: String?
 
     /** Token de acceso vigente; se renueva si hace falta. Lanza SessionExpiredException si ya no hay sesión. */
     suspend fun accessToken(): String
