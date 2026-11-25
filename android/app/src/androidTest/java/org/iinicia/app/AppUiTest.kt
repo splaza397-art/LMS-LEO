@@ -2,7 +2,10 @@ package org.iinicia.app
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -150,6 +153,17 @@ class AppUiTest {
         compose.waitUntil(3_000) { compose.onAllNodesWithText("Iniciar sesión").fetchSemanticsNodes().isNotEmpty() }
         text("Inicio").assertDoesNotExist()
         assertEquals(1, scheduler.cancelled)
+    }
+
+    /** Fase 4.10 (accesibilidad): el interruptor de notificaciones tiene nombre y se activa tocando toda la fila. */
+    @Test fun interruptorDeNotificacionesConNombre() {
+        start()
+        text("Perfil").performClick()
+        val node = compose.onNode(hasText("Notificaciones") and isToggleable())
+        node.assertIsDisplayed()
+        val before = node.fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
+        node.performClick()
+        assertTrue(node.fetchSemanticsNode().config[SemanticsProperties.ToggleableState] != before)
     }
 
     /** A13: tras cerrar sesión, otra cuenta nunca ve los datos de la anterior. */

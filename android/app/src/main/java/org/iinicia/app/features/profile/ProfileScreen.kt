@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -20,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -59,9 +61,15 @@ fun ProfileContent(profile: Profile, notifications: Boolean, onNotificationsChan
         Text("${profile.firstName} ${profile.lastName}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(profile.email)
         Text("Estado: ${profile.statusLabel}")
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Toda la fila es el interruptor: TalkBack lee "Notificaciones, activado, interruptor" en un solo elemento
+        // (antes el interruptor no tenía nombre propio; encontrado al revisar la accesibilidad en el teléfono, Fase 4.10).
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .toggleable(value = notifications, role = Role.Switch, onValueChange = onNotificationsChange),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text("Notificaciones", Modifier.weight(1f))
-            Switch(checked = notifications, onCheckedChange = onNotificationsChange)
+            Switch(checked = notifications, onCheckedChange = null)
         }
         OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Cerrar sesión") }
     }
