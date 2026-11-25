@@ -120,10 +120,16 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         val confirmed = _signedIn.value && runCatching { remoteLogout() }.getOrDefault(false)
         return mutex.withLock {
             val refresh = state.refreshToken
-            val revoked = refresh?.let { revoke(it) } ?: true
             clearLocked()
-            if (!(confirmed && revoked) && refresh != null) store.put(PENDING_LOGOUT, refresh)
-            confirmed && revoked
+            if (confirmed) {
+                // El backend ya cerró la sesión de Keycloak; revocar es solo limpieza.
+                refresh?.let { revoke(it) }
+            } else if (refresh != null) {
+                // No se revoca todavía: si se revocara sin el backend, el reintento ya no podría pedirle que cierre
+                // las sesiones de Moodle. El token queda cifrado como cierre pendiente; la sesión local ya se borró.
+                store.put(PENDING_LOGOUT, refresh)
+            }
+            confirmed
         }
     }
 
