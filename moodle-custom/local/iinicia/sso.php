@@ -47,7 +47,11 @@ if (!isloggedin() || isguestuser() || (int) $USER->id !== (int) $ticket->user->i
     // Otra persona (o nadie): se cierra la sesión anterior y se abre una nueva. complete_user_login cambia el
     // identificador de sesión, así que una sesión fijada de antemano no sirve.
     if (isloggedin()) {
+        // Cierra la sesión anterior (Moodle regenera el identificador y la deja inactiva) y abre una sesión nueva
+        // vacía en la que se inicia la de quien pidió el enlace. Sin start(), el inicio no se guardaba y la persona
+        // quedaba en la página de acceso (encontrado al probar el cambio portal -> app en el teléfono).
         require_logout();
+        \core\session\manager::start();
     }
     complete_user_login($ticket->user);
 }

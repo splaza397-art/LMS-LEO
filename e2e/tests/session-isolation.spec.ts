@@ -106,7 +106,8 @@ test("una sesión de Moodle de otra cuenta no se reutiliza aunque no se haya cer
   const link = await bff(other, "GET", "me/campus-link");
   await a.goto(link.body.url);
   await a.waitForLoadState("load");
-  expect(await moodleIdentity(a), "el enlace del profesor no deja al estudiante dentro").not.toBe(ESTUDIANTE.name);
+  // El enlace es del profesor: Moodle cierra la sesión del estudiante y abre la del profesor (no la deja a medias).
+  expect(await moodleIdentity(a), "el enlace del profesor abre la sesión del profesor, no la del estudiante").toBe(PROFESOR.name);
   await context.close();
   await other.context().close();
 });
