@@ -14,7 +14,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.iinicia.app.notifications.NoticeWorker
+import org.iinicia.app.features.notifications.NoticeWorker
 import org.iinicia.app.ui.AppRoot
 import org.iinicia.app.ui.theme.IiniciaTheme
 

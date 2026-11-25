@@ -1,4 +1,4 @@
-package org.iinicia.app.notifications
+package org.iinicia.app.features.notifications
 
 import android.Manifest
 import android.app.PendingIntent
@@ -21,7 +21,7 @@ import androidx.work.WorkerParameters
 import org.iinicia.app.IiniciaApp
 import org.iinicia.app.MainActivity
 import org.iinicia.app.R
-import org.iinicia.app.auth.SessionExpiredException
+import org.iinicia.app.core.security.SessionExpiredException
 import java.util.concurrent.TimeUnit
 
 /** Consulta avisos nuevos en segundo plano. Es el mecanismo equivalente a FCM mientras no exista proyecto Firebase. */

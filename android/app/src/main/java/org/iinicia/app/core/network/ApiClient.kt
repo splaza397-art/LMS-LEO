@@ -1,4 +1,4 @@
-package org.iinicia.app.data
+package org.iinicia.app.core.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,8 +8,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.iinicia.app.BuildConfig
-import org.iinicia.app.auth.AuthManager
-import org.iinicia.app.auth.SessionExpiredException
+import org.iinicia.app.core.security.AuthManager
+import org.iinicia.app.core.security.SessionExpiredException
 import java.util.concurrent.TimeUnit
 
 class ApiException(val code: Int, message: String) : Exception(message)

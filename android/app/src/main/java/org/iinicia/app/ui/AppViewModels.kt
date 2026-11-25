@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.iinicia.app.IiniciaApp
-import org.iinicia.app.auth.SessionExpiredException
-import org.iinicia.app.data.ApiException
-import org.iinicia.app.data.Course
-import org.iinicia.app.data.Dashboard
+import org.iinicia.app.core.security.SessionExpiredException
+import org.iinicia.app.core.network.ApiException
+import org.iinicia.app.data.models.Course
+import org.iinicia.app.data.models.Dashboard
 import java.io.IOException
 
 data class UiState<T>(val loading: Boolean = true, val data: T? = null, val offline: Boolean = false, val error: String? = null)

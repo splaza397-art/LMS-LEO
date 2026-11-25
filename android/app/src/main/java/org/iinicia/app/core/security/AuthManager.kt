@@ -1,4 +1,4 @@
-package org.iinicia.app.auth
+package org.iinicia.app.core.security
 
 import android.content.Context
 import android.content.Intent
@@ -19,6 +19,7 @@ import net.openid.appauth.EndSessionRequest
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.connectivity.ConnectionBuilder
 import org.iinicia.app.BuildConfig
+import org.iinicia.app.core.storage.SecureStore
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder

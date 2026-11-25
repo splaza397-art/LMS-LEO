@@ -1,4 +1,4 @@
-package org.iinicia.app.auth
+package org.iinicia.app.core.storage
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

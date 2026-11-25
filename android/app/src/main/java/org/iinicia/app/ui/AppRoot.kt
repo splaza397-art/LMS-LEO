@@ -33,10 +33,10 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.iinicia.app.IiniciaApp
 import org.iinicia.app.R
-import org.iinicia.app.data.Activity
-import org.iinicia.app.data.Course
-import org.iinicia.app.data.Dashboard
-import org.iinicia.app.notifications.NoticeWorker
+import org.iinicia.app.data.models.Activity
+import org.iinicia.app.data.models.Course
+import org.iinicia.app.data.models.Dashboard
+import org.iinicia.app.features.notifications.NoticeWorker
 import org.iinicia.app.ui.theme.Navy
 import java.text.DateFormat
 import java.util.Date

@@ -1,4 +1,4 @@
-package org.iinicia.app.data
+package org.iinicia.app.data.models
 
 import kotlinx.serialization.Serializable
 

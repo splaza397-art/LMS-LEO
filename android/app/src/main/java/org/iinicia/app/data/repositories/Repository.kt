@@ -1,9 +1,16 @@
-package org.iinicia.app.data
+package org.iinicia.app.data.repositories
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.encodeToString
-import org.iinicia.app.auth.SecureStore
+import org.iinicia.app.core.storage.SecureStore
+import org.iinicia.app.core.network.ApiClient
+import org.iinicia.app.data.models.CampusLink
+import org.iinicia.app.data.models.Dashboard
+import org.iinicia.app.data.models.Course
+import org.iinicia.app.data.models.Notice
+import org.iinicia.app.data.models.Profile
+import org.iinicia.app.data.models.Activity
 
 /** Red primero con cache cifrada: sin conexion se muestra la ultima informacion conocida. */
 class Repository(private val api: ApiClient, private val store: SecureStore) {
