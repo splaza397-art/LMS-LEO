@@ -4,7 +4,7 @@ Portal Next.js, backend NestJS, Moodle 5.3 LTS, identidad con Keycloak (OIDC) y 
 
 | Carpeta | Contenido |
 | --- | --- |
-| `frontend/` | Portal, Mi IINICIA y panel de gestión (Next.js 16, TypeScript, Tailwind) |
+| `frontend/` | Portal, Mi IINICIA y panel de gestión (Next.js 16, TypeScript, Tailwind), organizado por funcionalidad (`src/features`) |
 | `backend/` | API, reglas de negocio, RBAC, auditoría e integración con Moodle (NestJS, PostgreSQL) |
 | `android/` | App de estudiantes (Kotlin, Jetpack Compose, AppAuth) |
 | `moodle-custom/` | Plugin `local_iinicia` y tema `theme_iinicia`, sin modificar Moodle Core |
@@ -65,6 +65,6 @@ adb reverse tcp:4000 tcp:4000 && adb reverse tcp:8180 tcp:8180 && adb reverse tc
 cd backend && npm test                 # unitarias
 cd backend && npm run test:integration # con PostgreSQL (servicios encendidos)
 cd backend && npm run test:contracts   # compatibilidad de la API con la referencia previa a la Fase 2
-cd frontend && npm test                # unitarias del portal
+cd frontend && npm test                # unitarias y de componentes del portal (node --test y Vitest)
 cd e2e && npm install && npx playwright install chromium && npx playwright test
 ```

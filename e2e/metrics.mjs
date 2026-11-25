@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 config({ path: resolve(import.meta.dirname, '../backend/.env'), quiet: true });
 const label = process.argv[2] ?? 'medicion';
 const BASE = 'http://localhost:3000';
-const RUNS = 3;
+const RUNS = 5;
 const pages = [
   { name: 'inicio', path: '/' },
   { name: 'oferta', path: '/oferta' },
@@ -35,11 +35,21 @@ for (const target of pages) {
     const context = await browser.newContext();
     const page = await context.newPage();
     if (target.who) await login(page, target.who, '/');
+    // JS propio de la página: scripts pedidos antes del evento load. Lo que llega después son, sobre todo,
+    // precargas de Next.js de los enlaces visibles, que dependen del momento y no son código de la página.
     let jsBytes = 0;
+    let jsTotalBytes = 0;
     let requests = 0;
+    let loaded = false;
+    page.on('load', () => { loaded = true; });
+    page.on('request', (req) => { req.beforeLoad = !loaded; });
     page.on('response', async (r) => {
       requests++;
-      if (r.request().resourceType() === 'script') jsBytes += Number(r.headers()['content-length'] ?? (await r.body().catch(() => Buffer.alloc(0))).length);
+      if (r.request().resourceType() !== 'script') return;
+      // Bytes transferidos (comprimidos); lo que sale de la caché del navegador cuenta 0.
+      const size = Math.max(0, (await r.request().sizes().catch(() => ({ responseBodySize: 0 }))).responseBodySize);
+      jsTotalBytes += size;
+      if (r.request().beforeLoad) jsBytes += size;
     });
     const started = Date.now();
     await page.goto(`${BASE}${target.path}`, { waitUntil: 'load' });
@@ -49,13 +59,13 @@ for (const target of pages) {
       const n = performance.getEntriesByType('navigation')[0];
       return { ttfb: Math.round(n.responseStart), domContentLoaded: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) };
     });
-    runs.push({ ...nav, jsKB: Math.round(jsBytes / 1024), requests, readyMs: Date.now() - started });
+    runs.push({ ...nav, jsKB: Math.round(jsBytes / 1024), jsTotalKB: Math.round(jsTotalBytes / 1024), requests, readyMs: Date.now() - started });
     await context.close();
   }
   const median = (k) => runs.map((r) => r[k]).sort((a, b) => a - b)[Math.floor(RUNS / 2)];
-  results.push({ page: target.name, path: target.path, jsKB: median('jsKB'), requests: median('requests'), ttfbMs: median('ttfb'), domContentLoadedMs: median('domContentLoaded'), loadMs: median('load'), readyMs: median('readyMs') });
+  results.push({ page: target.name, path: target.path, jsKB: median('jsKB'), jsTotalKB: median('jsTotalKB'), requests: median('requests'), ttfbMs: median('ttfb'), domContentLoadedMs: median('domContentLoaded'), loadMs: median('load'), readyMs: median('readyMs') });
 }
 await browser.close();
 const out = resolve(import.meta.dirname, `../documentation/evidencias/rendimiento-frontend-${label}.json`);
-writeFileSync(out, JSON.stringify({ fecha: new Date().toISOString(), corridas: RUNS, nota: 'Mediana de 3 cargas con caché vacía, PC de desarrollo', resultados: results }, null, 2) + '\n');
+writeFileSync(out, JSON.stringify({ fecha: new Date().toISOString(), corridas: RUNS, nota: `Mediana de ${RUNS} cargas con caché vacía, PC de desarrollo. jsKB: JS pedido antes de load (propio de la página); jsTotalKB: incluye precargas de enlaces hasta networkidle`, resultados: results }, null, 2) + '\n');
 console.table(results);

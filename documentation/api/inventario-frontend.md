@@ -67,7 +67,9 @@ Estado del portal **antes** de la refactorización: rama `refactor/frontend-modu
 
 ## Rendimiento inicial
 
-Mediana de 3 cargas con caché vacía, en la PC de desarrollo. Archivo: `evidencias/rendimiento-frontend-antes.json`.
+> **Reemplazado en la etapa 3.8.** Estas cifras mezclaban bytes comprimidos y sin comprimir e incluían precargas de enlaces, así que no sirven para comparar. La medición válida, de `main` y de la rama con el mismo método, está en la sección 13 de [14-refactorizacion-frontend.md](../14-refactorizacion-frontend.md). `evidencias/rendimiento-frontend-antes.json` contiene ahora esa medición nueva.
+
+Mediana de 3 cargas con caché vacía, en la PC de desarrollo (medición original, solo como registro).
 
 | Página | JS (KB) | Solicitudes | DOMContentLoaded (ms) | Lista para usar (ms) |
 |---|---|---|---|---|

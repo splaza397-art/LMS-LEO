@@ -17,6 +17,8 @@ test("se llega a registros posteriores a los primeros 200", async ({ browser }) 
   await expect(page.getByRole("tab", { name: "Información" })).toHaveAttribute("aria-selected", "true");
   await page.getByLabel("Buscar persona").fill("Interesada");
   await expect(page.getByText(new RegExp(`Mostrando 1–20 de ${SEEDED} solicitudes`))).toBeVisible();
+  // La búsqueda se aplicó de verdad (sin otras solicitudes en la base, el total no basta para distinguirlo).
+  await expect(page).toHaveURL(/q=Interesada/);
 
   await page.getByLabel("Por página").selectOption("100");
   await expect(page.getByText(`Mostrando 1–100 de ${SEEDED} solicitudes`)).toBeVisible();

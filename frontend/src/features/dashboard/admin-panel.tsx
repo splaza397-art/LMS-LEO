@@ -15,7 +15,10 @@ export interface AdminPanelProps {
 }
 
 // Cada sección se descarga solo al abrir su pestaña: un rol con 2 secciones no carga el código de las 8.
-const lazy = <P,>(load: () => Promise<ComponentType<P>>) => dynamic(load, { loading: () => <Loading /> });
+// ssr: false: si el servidor dibujara la sección, sus campos aparecerían antes de que React los active, y lo que se
+// escribiera en ese momento se vería en pantalla sin aplicarse (la búsqueda quedaba sin filtrar). Las secciones
+// son privadas y piden sus datos en el navegador, así que no se pierde nada: se muestra "Cargando" hasta que funcionan.
+const lazy = <P,>(load: () => Promise<ComponentType<P>>) => dynamic(load, { ssr: false, loading: () => <Loading /> });
 const PANELS: Record<AdminSectionId, ComponentType<AdminPanelProps>> = {
   solicitudes: lazy(() => import("@/features/admissions/applications-panel").then((m) => m.ApplicationsPanel)),
   usuarios: lazy(() => import("@/features/users/users-panel").then((m) => m.UsersPanel)),

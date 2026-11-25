@@ -1,57 +1,62 @@
 {
-  "fecha": "2026-11-25T00:37:27.482Z",
-  "corridas": 3,
-  "nota": "Mediana de 3 cargas con caché vacía, PC de desarrollo",
+  "fecha": "2026-11-25T01:33:42.182Z",
+  "corridas": 5,
+  "nota": "Mediana de 5 cargas con caché vacía, PC de desarrollo. jsKB: JS pedido antes de load (propio de la página); jsTotalKB: incluye precargas de enlaces hasta networkidle",
   "resultados": [
     {
       "page": "inicio",
       "path": "/",
-      "jsKB": 237,
+      "jsKB": 141,
+      "jsTotalKB": 147,
       "requests": 30,
-      "ttfbMs": 13,
-      "domContentLoadedMs": 344,
-      "loadMs": 493,
-      "readyMs": 1619
+      "ttfbMs": 11,
+      "domContentLoadedMs": 242,
+      "loadMs": 407,
+      "readyMs": 1326
     },
     {
       "page": "oferta",
       "path": "/oferta",
-      "jsKB": 81,
-      "requests": 36,
-      "ttfbMs": 17,
-      "domContentLoadedMs": 182,
-      "loadMs": 426,
-      "readyMs": 1689
+      "jsKB": 141,
+      "jsTotalKB": 147,
+      "requests": 39,
+      "ttfbMs": 10,
+      "domContentLoadedMs": 147,
+      "loadMs": 369,
+      "readyMs": 1425
     },
     {
       "page": "programa",
       "path": "/oferta/base-de-datos",
-      "jsKB": 179,
-      "requests": 32,
-      "ttfbMs": 22,
-      "domContentLoadedMs": 197,
-      "loadMs": 388,
-      "readyMs": 1342
+      "jsKB": 143,
+      "jsTotalKB": 148,
+      "requests": 30,
+      "ttfbMs": 17,
+      "domContentLoadedMs": 150,
+      "loadMs": 336,
+      "readyMs": 1208
     },
     {
       "page": "mi-iinicia (estudiante)",
       "path": "/mi-iinicia",
-      "jsKB": 10,
+      "jsKB": 4,
+      "jsTotalKB": 4,
       "requests": 31,
-      "ttfbMs": 15,
-      "domContentLoadedMs": 749,
-      "loadMs": 749,
-      "readyMs": 1616
+      "ttfbMs": 12,
+      "domContentLoadedMs": 730,
+      "loadMs": 730,
+      "readyMs": 1324
     },
     {
       "page": "panel (superadmin)",
       "path": "/admin",
-      "jsKB": 28,
+      "jsKB": 3,
+      "jsTotalKB": 11,
       "requests": 37,
-      "ttfbMs": 12,
-      "domContentLoadedMs": 146,
-      "loadMs": 169,
-      "readyMs": 1151
+      "ttfbMs": 13,
+      "domContentLoadedMs": 155,
+      "loadMs": 155,
+      "readyMs": 1256
     }
   ]
 }

@@ -1,0 +1,11 @@
+{
+  "fecha": "2026-11-24",
+  "descripcion": "Clic en 'Entrar al curso' (SSO portal -> Moodle) hasta cargar course/view.php, medido con Playwright justo después de que Docker marca los contenedores como healthy y en un segundo acceso.",
+  "escenarios": [
+    { "reinicio": "solo contenedor moodle", "hastaHealthySegundos": 16.3, "primerAccesoSegundos": 17.1, "segundoAccesoSegundos": 4.5 },
+    { "reinicio": "docker compose restart (pila completa)", "hastaHealthySegundos": 45.3, "loginKeycloakFrioSegundos": 7.7, "loginKeycloakCalienteSegundos": 2.1, "primerAccesoSegundos": 19.4, "segundoAccesoSegundos": 4.7 }
+  ],
+  "limiteDeLaPrueba": "poc.spec.ts y roles.spec.ts esperan 60 s la URL de Moodle",
+  "reproducido": false,
+  "noMedido": "reinicio de Docker Desktop o del equipo (máquina virtual y caché de disco fríos)"
+}
