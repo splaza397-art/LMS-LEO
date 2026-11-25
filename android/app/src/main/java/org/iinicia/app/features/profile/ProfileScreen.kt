@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.iinicia.app.data.models.Profile
 import org.iinicia.app.data.models.statusLabel
@@ -30,6 +32,7 @@ import org.iinicia.app.ui.components.ScreenContent
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit, onEnableNotifications: () -> Unit = {}) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notifications by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { profile ->

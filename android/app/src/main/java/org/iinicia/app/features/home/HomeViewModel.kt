@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.iinicia.app.core.common.Freshness
 import org.iinicia.app.core.common.Outcome
 import org.iinicia.app.core.common.UiEvent
 import org.iinicia.app.core.common.attempt
@@ -47,12 +48,14 @@ class HomeViewModel(
     private val profiles: ProfileRepository,
     private val courses: CourseRepository,
     private val session: Session,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
     val events: Flow<UiEvent> = _events.receiveAsFlow()
     private var loading: Job? = null
+    private val freshness = Freshness(clock = clock)
 
     init { refresh(force = false) }
 
@@ -66,6 +69,7 @@ class HomeViewModel(
                 val list = async { attempt(session) { courses.courses(force) } }
                 val next = async { attempt(session) { courses.upcoming(force) } }
                 apply(profile.await(), list.await(), next.await())
+                if (_state.value.error == null && _state.value.academicError == null) freshness.markLoaded()
             }
         }
     }
@@ -88,5 +92,10 @@ class HomeViewModel(
     /** Entra al campus (página "Mis cursos" de Moodle) con inicio de sesión único. */
     fun openCampus() {
         viewModelScope.launch { _events.send(campusEvent(session) { courses.campusLink() }) }
+    }
+
+    /** La pantalla vuelve a estar activa: se actualiza solo si sus datos tienen más de 60 s. */
+    fun onResume() {
+        if (freshness.isStale()) refresh()
     }
 }

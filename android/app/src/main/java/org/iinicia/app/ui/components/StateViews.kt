@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.Flow
 import org.iinicia.app.core.common.ScreenState
 import org.iinicia.app.core.common.UiEvent
 import org.iinicia.app.core.common.formatMillis
+import org.iinicia.app.core.common.savedCopyNotice
 
 /**
  * Contenido de una pantalla según su estado: indicador mientras carga por primera vez, error con "Reintentar" si
@@ -90,7 +91,7 @@ fun InlineError(message: String) = Text(
 @Composable
 fun OfflineBanner(savedAt: Long) = Surface(color = Color(0xFFFEF3C7), modifier = Modifier.fillMaxWidth()) {
     Text(
-        "No se pudo actualizar. Mostrando la información guardada el ${formatMillis(savedAt)}.",
+        savedCopyNotice(formatMillis(savedAt)),
         color = Color(0xFF78350F),
         modifier = Modifier.padding(12.dp),
     )

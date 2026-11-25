@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.iinicia.app.core.common.formatUnixDate
 import org.iinicia.app.data.models.Course
@@ -34,6 +36,7 @@ import org.iinicia.app.ui.components.SectionTitle
 
 @Composable
 fun CourseDetailScreen(viewModel: CourseDetailViewModel) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { course ->
         CourseDetail(course, openCourse = { viewModel.openInCampus() }, openActivity = { viewModel.openInCampus(it) })

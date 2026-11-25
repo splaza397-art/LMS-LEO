@@ -47,7 +47,7 @@ class AppUiTest {
     private fun start(signedIn: Boolean = true, fontScale: Float = 1f) {
         auth.state.value = signedIn
         val container = AppContainer(auth, api, MemoryStore(), scheduler)
-        val authViewModel = AuthViewModel(auth, scheduler)
+        val authViewModel = AuthViewModel(auth, scheduler, api)
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {

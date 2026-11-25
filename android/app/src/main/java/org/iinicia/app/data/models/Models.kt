@@ -53,6 +53,10 @@ data class Notice(
 @Serializable
 data class CampusLink(val url: String)
 
+/** Respuesta de POST /me/logout: estado de cada servicio y si el cierre quedó confirmado por todos. */
+@Serializable
+data class LogoutResult(val keycloak: String = "", val moodle: String = "", val complete: Boolean = false)
+
 @Serializable
 data class Dashboard(
     val profile: Profile,

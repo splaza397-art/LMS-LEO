@@ -16,8 +16,9 @@ import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
-import net.openid.appauth.EndSessionRequest
+import net.openid.appauth.GrantTypeValues
 import net.openid.appauth.ResponseTypeValues
+import net.openid.appauth.TokenRequest
 import net.openid.appauth.connectivity.ConnectionBuilder
 import org.iinicia.app.BuildConfig
 import org.iinicia.app.core.network.AppError
@@ -57,6 +58,9 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         AuthorizationRequest.Builder(config, CLIENT_ID, ResponseTypeValues.CODE, REDIRECT.toUri())
             .setScope("openid profile email offline_access")
             .setUiLocales("es")
+            // Fase 4.10: la app siempre pide credenciales. Una sesión de Keycloak que haya quedado en el navegador
+            // (por ejemplo, tras un cierre interrumpido) nunca inicia sola la sesión de la cuenta anterior.
+            .setPrompt(AuthorizationRequest.Prompt.LOGIN)
             .build(),
     )
 
@@ -104,22 +108,61 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         }
     }
 
-    override suspend fun logoutIntent(): Intent? = mutex.withLock {
-        val idToken = state.idToken
-        state.refreshToken?.let { revoke(it) }
-        clearLocked()
-        idToken?.let {
-            service.getEndSessionRequestIntent(
-                EndSessionRequest.Builder(config)
-                    .setIdTokenHint(it)
-                    .setPostLogoutRedirectUri(LOGOUT_REDIRECT.toUri())
-                    .build(),
-            )
+    /**
+     * Cierre de sesión coordinado (Fase 4.10), sin depender de una redirección en el navegador:
+     * 1. El backend cierra la sesión de Keycloak y las de Moodle (remoteLogout, con el token vigente).
+     * 2. Se revoca el refresh token en Keycloak.
+     * 3. Se borra siempre la sesión local, aunque lo anterior falle.
+     * Si el servidor no confirmó el cierre, se guarda (cifrado) el refresh token como cierre pendiente para
+     * completarlo cuando haya conexión. Devuelve true solo si todo quedó confirmado.
+     */
+    override suspend fun logout(remoteLogout: suspend () -> Boolean): Boolean {
+        val confirmed = _signedIn.value && runCatching { remoteLogout() }.getOrDefault(false)
+        return mutex.withLock {
+            val refresh = state.refreshToken
+            val revoked = refresh?.let { revoke(it) } ?: true
+            clearLocked()
+            if (!(confirmed && revoked) && refresh != null) store.put(PENDING_LOGOUT, refresh)
+            confirmed && revoked
         }
     }
 
-    /** La sesion offline sobrevive al cierre en el navegador: se revoca explicitamente en el servidor. */
-    private suspend fun revoke(refreshToken: String) = withContext(Dispatchers.IO) {
+    override val logoutPending: Boolean get() = store.get(PENDING_LOGOUT) != null
+
+    /**
+     * Completa un cierre pendiente: renueva con el refresh token guardado para obtener un token de acceso, pide el
+     * cierre al backend y revoca. Si Keycloak ya no reconoce el token, la sesión ya no existe y no queda nada
+     * pendiente en Keycloak. Devuelve true si ya no hay cierre pendiente.
+     */
+    override suspend fun retryPendingLogout(remoteLogout: suspend (accessToken: String) -> Boolean): Boolean = mutex.withLock {
+        val pending = store.get(PENDING_LOGOUT) ?: return@withLock true
+        val tokens = runCatching {
+            suspendCancellableCoroutine { cont ->
+                service.performTokenRequest(
+                    TokenRequest.Builder(config, CLIENT_ID).setGrantType(GrantTypeValues.REFRESH_TOKEN).setRefreshToken(pending).build(),
+                ) { result, ex -> if (result != null) cont.resume(result) else cont.resumeWithException(ex ?: IllegalStateException()) }
+            }
+        }
+        val error = tokens.exceptionOrNull() as? AuthorizationException
+        when {
+            error?.type == AuthorizationException.TYPE_OAUTH_TOKEN_ERROR -> {
+                store.put(PENDING_LOGOUT, null)
+                true
+            }
+            tokens.isFailure -> false
+            else -> {
+                val fresh = tokens.getOrThrow()
+                val confirmed = fresh.accessToken?.let { runCatching { remoteLogout(it) }.getOrDefault(false) } ?: false
+                val newRefresh = fresh.refreshToken ?: pending
+                val revoked = revoke(newRefresh)
+                store.put(PENDING_LOGOUT, if (confirmed && revoked) null else newRefresh)
+                confirmed && revoked
+            }
+        }
+    }
+
+    /** La sesión offline sobrevive a cerrar el navegador: se revoca explícitamente. true si Keycloak respondió 200. */
+    private suspend fun revoke(refreshToken: String): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             val uri = "${BuildConfig.ISSUER_URL}/protocol/openid-connect/revoke".toUri()
             val connection = (if (BuildConfig.ALLOW_HTTP) LocalhostConnectionBuilder.openConnection(uri) else URL(uri.toString()).openConnection() as HttpURLConnection)
@@ -128,16 +171,20 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
             val body = "client_id=$CLIENT_ID&token_type_hint=refresh_token&token=${URLEncoder.encode(refreshToken, "UTF-8")}"
             connection.outputStream.use { it.write(body.toByteArray()) }
-            connection.responseCode
+            val code = connection.responseCode
             connection.disconnect()
-        }
+            code == 200
+        }.getOrDefault(false)
     }
 
     override suspend fun clearSession() = mutex.withLock { clearLocked() }
 
+    /** Borra la sesión y los datos guardados, pero conserva un cierre pendiente de la cuenta anterior. */
     private fun clearLocked() {
+        val pending = store.get(PENDING_LOGOUT)
         state = AuthState()
         store.clear()
+        pending?.let { store.put(PENDING_LOGOUT, it) }
         _signedIn.value = false
     }
 
@@ -165,6 +212,6 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         const val KEY = "auth_state"
         const val CLIENT_ID = "iinicia-android"
         const val REDIRECT = "org.iinicia.app:/oauth2redirect"
-        const val LOGOUT_REDIRECT = "org.iinicia.app:/logout"
+        const val PENDING_LOGOUT = "pending_logout"
     }
 }

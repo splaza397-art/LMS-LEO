@@ -192,7 +192,7 @@ class ViewModelsTest {
 
     @Test fun `iniciar sesion programa los avisos y pide el permiso despues`() = runTest {
         session.state.value = false
-        val vm = AuthViewModel(session, scheduler)
+        val vm = AuthViewModel(session, scheduler, api)
         vm.onLoginResult(Intent())
         assertTrue(vm.signedIn.value)
         assertEquals(1, scheduler.scheduled)
@@ -203,7 +203,7 @@ class ViewModelsTest {
     @Test fun `cerrar el navegador sin iniciar sesion no es un error`() {
         session.state.value = false
         session.loginBehavior = { throw LoginCancelledException() }
-        val vm = AuthViewModel(session, scheduler)
+        val vm = AuthViewModel(session, scheduler, api)
         vm.onLoginResult(Intent())
         vm.onLoginResult(null)
         assertNull(vm.loginError.value)
@@ -213,13 +213,13 @@ class ViewModelsTest {
     @Test fun `sin red al iniciar sesion se explica`() {
         session.state.value = false
         session.loginBehavior = { throw AppError.Network() }
-        val vm = AuthViewModel(session, scheduler)
+        val vm = AuthViewModel(session, scheduler, api)
         vm.onLoginResult(Intent())
         assertEquals("No se pudo iniciar sesión. Sin conexión. Revisa tu internet e intenta de nuevo.", vm.loginError.value)
     }
 
     @Test fun `cerrar sesion cancela los avisos y cierra la sesion local`() {
-        val vm = AuthViewModel(session, scheduler)
+        val vm = AuthViewModel(session, scheduler, api)
         vm.logout()
         assertEquals(1, scheduler.cancelled)
         assertEquals(1, session.logoutCalls)

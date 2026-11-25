@@ -31,7 +31,7 @@ import org.iinicia.app.features.notifications.WorkManagerNoticeScheduler
  */
 class AppContainer(
     val auth: Authenticator,
-    api: IiniciaApi,
+    val api: IiniciaApi,
     store: KeyValueStore,
     val scheduler: NoticeScheduler,
 ) {

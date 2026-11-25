@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.iinicia.app.data.models.Notice
 import org.iinicia.app.ui.components.EmptyState
@@ -27,6 +29,7 @@ import org.iinicia.app.ui.components.ScreenContent
 
 @Composable
 fun NotificationsScreen(viewModel: NotificationsViewModel) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { notices -> NoticeList(notices, viewModel::markRead) }
 }

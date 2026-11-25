@@ -34,8 +34,9 @@ class ApiClient(
 ) {
     val json: Json = AppJson
 
-    suspend fun request(path: String, method: String = "GET", body: String? = null): String {
-        val token = session.accessToken()
+    /** bearer: token explícito (solo para completar un cierre pendiente, cuando ya no hay sesión local). */
+    suspend fun request(path: String, method: String = "GET", body: String? = null, bearer: String? = null): String {
+        val token = bearer ?: session.accessToken()
         val requestBody = body?.toRequestBody(JSON_TYPE) ?: if (method == "GET") null else ByteArray(0).toRequestBody()
         val request = Request.Builder()
             .url("$baseUrl/$path")

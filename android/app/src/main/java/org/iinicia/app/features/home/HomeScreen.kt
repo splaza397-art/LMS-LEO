@@ -19,6 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.iinicia.app.features.courses.CourseCard
 import org.iinicia.app.features.courses.UpcomingCard
@@ -29,6 +31,7 @@ import org.iinicia.app.ui.components.SectionTitle
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, openCourse: (Int, String?) -> Unit) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     HomeContent(state, onRefresh = viewModel::refresh, openCourse = openCourse, openCampus = viewModel::openCampus)
 }
