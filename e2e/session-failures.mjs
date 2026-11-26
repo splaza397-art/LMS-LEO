@@ -68,7 +68,8 @@ const reauthCookie = async (page) => (await page.context().cookies('http://local
   docker(...COMPOSE, 'stop', 'moodle');
   await page.goto('http://localhost:3000/mi-iinicia');
   const link = await page.request.get('http://localhost:3000/api/bff/v1/me/campus-link', { headers: { origin: 'http://localhost:3000' } });
-  const reached = await page.goto((await link.json()).url, { timeout: 10_000 }).then(() => true).catch(() => false);
+  // Sin navegar la página (una navegación fallida deja una página de error que choca con la siguiente).
+  const reached = await page.request.get((await link.json()).url, { maxRedirects: 0, timeout: 10_000 }).then(() => true).catch(() => false);
   check('M0 con Moodle detenido, entrar al campus falla sin abrir otra cuenta y el portal sigue con la sesión', !reached && (await (await page.request.get('http://localhost:3000/api/bff/v1/me', { headers: { origin: 'http://localhost:3000' } })).json()).email === 'estudiante@iinicia.test');
   await logoutClick(page);
   check('M2 cierre con Moodle detenido: queda pendiente en el backend', sql("select moodle_logout_pending_at is not null from users where email='estudiante@iinicia.test'") === 't');
