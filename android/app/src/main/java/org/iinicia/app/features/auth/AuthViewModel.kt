@@ -44,6 +44,8 @@ class AuthViewModel(
     init {
         // Un cierre anterior que no se pudo confirmar (sin red, servidor caído, teléfono bloqueado) se completa ahora.
         retryPendingLogout()
+        // A16: si la sesión terminó porque se interrumpió una renovación, se explica en la pantalla de inicio.
+        viewModelScope.launch { auth.sessionNotice.collect { notice -> if (notice != null) _logoutNotice.value = notice } }
     }
 
     fun loginIntent(): Intent = auth.loginIntent()

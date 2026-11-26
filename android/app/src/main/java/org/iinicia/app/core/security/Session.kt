@@ -36,6 +36,11 @@ interface Authenticator : Session {
     /** Hay un cierre de sesión anterior sin confirmar en el servidor. */
     val logoutPending: Boolean
 
+    /** A16: explicación de por qué terminó la sesión (por ejemplo, una renovación interrumpida), o null. */
+    val sessionNotice: kotlinx.coroutines.flow.StateFlow<String?>
+
+    fun clearSessionNotice()
+
     /** Intenta completar el cierre pendiente. Devuelve true si ya no queda nada pendiente. */
     suspend fun retryPendingLogout(remoteLogout: suspend (accessToken: String) -> Boolean): Boolean
 }

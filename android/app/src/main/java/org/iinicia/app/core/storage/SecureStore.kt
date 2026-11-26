@@ -31,13 +31,15 @@ class SecureStore(context: Context) : KeyValueStore {
 
     @Synchronized
     override fun put(name: String, value: String?) {
+        // A16 (Fase 5): escritura síncrona (commit). Con apply() la escritura era asíncrona y, si Android terminaba el
+        // proceso justo después de renovar los tokens, el token nuevo podía no llegar a disco.
         if (value == null) {
-            prefs.edit { remove(name) }
+            prefs.edit(commit = true) { remove(name) }
             return
         }
         val cipher = Cipher.getInstance(TRANSFORM).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val data = cipher.iv + cipher.doFinal(value.toByteArray())
-        prefs.edit { putString(name, Base64.encodeToString(data, Base64.NO_WRAP)) }
+        prefs.edit(commit = true) { putString(name, Base64.encodeToString(data, Base64.NO_WRAP)) }
     }
 
     @Synchronized
@@ -49,13 +51,13 @@ class SecureStore(context: Context) : KeyValueStore {
             cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, data, 0, IV_SIZE))
             String(cipher.doFinal(data, IV_SIZE, data.size - IV_SIZE))
         } catch (_: Exception) {
-            prefs.edit { remove(name) }
+            prefs.edit(commit = true) { remove(name) }
             null
         }
     }
 
     @Synchronized
-    override fun clear() = prefs.edit { clear() }
+    override fun clear() = prefs.edit(commit = true) { clear() }
 
     private companion object {
         const val ALIAS = "iinicia_session_key"

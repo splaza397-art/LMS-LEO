@@ -89,6 +89,10 @@ class FakeAuthenticator(signedIn: Boolean = true, var user: String = "persona-a"
 
     override val logoutPending: Boolean get() = pending != null
 
+    val notice = MutableStateFlow<String?>(null)
+    override val sessionNotice: StateFlow<String?> = notice
+    override fun clearSessionNotice() { notice.value = null }
+
     override suspend fun retryPendingLogout(remoteLogout: suspend (accessToken: String) -> Boolean): Boolean {
         retryCalls++
         if (pending == null) return true

@@ -40,6 +40,13 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         }.build(),
     )
     private val mutex = Mutex()
+    private val journal = RefreshJournal(store)
+    private val _sessionNotice = MutableStateFlow<String?>(null)
+    override val sessionNotice: StateFlow<String?> = _sessionNotice
+
+    override fun clearSessionNotice() {
+        _sessionNotice.value = null
+    }
     private var state: AuthState = store.get(KEY)?.let { runCatching { AuthState.jsonDeserialize(it) }.getOrNull() } ?: AuthState()
     private val _signedIn = MutableStateFlow(state.isAuthorized)
     override val signedIn: StateFlow<Boolean> = _signedIn
@@ -81,12 +88,20 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
         fresh.update(tokens, null)
         state = fresh
         persist()
+        journal.end()
+        _sessionNotice.value = null
         _signedIn.value = true
     }
 
-    /** El mutex evita renovaciones simultaneas, porque Keycloak rota el refresh token. */
+    /**
+     * El mutex evita renovaciones simultáneas, porque Keycloak rota el refresh token. A16: antes de renovar se anota la
+     * renovación en curso (escritura síncrona) y se borra al guardar el token nuevo; si el proceso muere entre medias,
+     * el siguiente arranque lo sabe (RefreshJournal).
+     */
     override suspend fun accessToken(): String = mutex.withLock {
         if (!state.isAuthorized) throw SessionExpiredException()
+        val previousInterrupted = journal.interrupted
+        if (state.needsTokenRefresh) journal.begin()
         val token = suspendCancellableCoroutine { cont ->
             state.performActionWithFreshTokens(service) { access, _, ex ->
                 when {
@@ -96,11 +111,14 @@ class AuthManager(context: Context, private val store: SecureStore) : Authentica
             }
         }
         persist()
+        journal.end()
         token.getOrElse { error ->
             val ex = error as? AuthorizationException
             if (ex?.type == AuthorizationException.TYPE_OAUTH_TOKEN_ERROR) {
-                // Keycloak rechazó el refresh token (vencido, revocado o sesión cerrada en otro lugar).
+                // Keycloak rechazó el refresh token (vencido, revocado, sesión cerrada en otro lugar o, tras una
+                // renovación interrumpida, reutilización detectada: Keycloak invalida toda la familia de tokens).
                 clearLocked()
+                if (previousInterrupted) _sessionNotice.value = RefreshJournal.INTERRUPTED_NOTICE
                 throw SessionExpiredException()
             }
             // Sin red al renovar: es un error transitorio, la pantalla puede mostrar la copia guardada.

@@ -59,6 +59,14 @@ class SessionIsolationTest {
         assertEquals(AuthViewModel.PENDING_NOTICE, vm.logoutNotice.value)
     }
 
+    /** A16 (Fase 5): si la sesión terminó por una renovación interrumpida, la pantalla de inicio lo explica. */
+    @Test fun `una renovacion interrumpida se explica al pedir credenciales`() {
+        session.state.value = false
+        val vm = AuthViewModel(session, scheduler, api)
+        session.notice.value = org.iinicia.app.core.security.RefreshJournal.INTERRUPTED_NOTICE
+        assertEquals(org.iinicia.app.core.security.RefreshJournal.INTERRUPTED_NOTICE, vm.logoutNotice.value)
+    }
+
     @Test fun `al abrir la app se completa el cierre pendiente con su propio token`() {
         session.state.value = false
         session.pending = "refresh-pendiente"
