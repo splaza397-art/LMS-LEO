@@ -109,8 +109,7 @@
       ],
       "webOrigins": [],
       "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "org.iinicia.app:/logout"
+        "pkce.code.challenge.method": "S256"
       },
       "protocolMappers": [
         {
