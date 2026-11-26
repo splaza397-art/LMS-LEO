@@ -125,7 +125,7 @@ test("7. dos canjes simultáneos del mismo comprobante: solo uno entra", async (
   const owner = await session(browser, "estudiante");
   const url = await campusTicket(owner);
   // Mismas cookies del navegador del dueño (salvo la sesión de Moodle), en dos conexiones independientes a la vez.
-  const cookie = (await owner.context().cookies(MOODLE)).filter((c) => c.name !== "MoodleSession").map((c) => `${c.name}=${c.value}`).join("; ");
+  const cookie = (await owner.context().cookies(url)).filter((c) => c.name !== "MoodleSession").map((c) => `${c.name}=${c.value}`).join("; ");
   const results = await Promise.all([0, 1].map(async () => {
     const ctx = await request.newContext();
     const response = await ctx.get(url, { maxRedirects: 0, headers: cookie ? { cookie } : {} });

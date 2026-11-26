@@ -101,20 +101,38 @@ test("una sesión de Moodle de otra cuenta no se reutiliza aunque no se haya cer
   expect(await portalLogin(a, ESTUDIANTE)).toBe(true);
   await openCampus(a);
   expect(await moodleIdentity(a)).toBe(ESTUDIANTE.name);
-  // El profesor obtiene su enlace en otro navegador y lo abre en este (enlace compartido o pegado).
+  // 1. El profesor obtiene su enlace en otro navegador y lo pega en este. Fase 4.11: el enlace no lleva la identidad
+  //    de quien lo pidió (no es una credencial al portador); en este navegador sigue entrando quien tiene aquí la sesión.
   const other = await session(browser, "profesor");
   const link = await bff(other, "GET", "me/campus-link");
   await a.goto(link.body.url);
   await a.waitForLoadState("load");
-  // El enlace es del profesor: Moodle cierra la sesión del estudiante y abre la del profesor (no la deja a medias).
-  expect(await moodleIdentity(a), "el enlace del profesor abre la sesión del profesor, no la del estudiante").toBe(PROFESOR.name);
+  expect(await moodleIdentity(a), "un enlace pegado no convierte este navegador en la cuenta de quien lo pidió").toBe(ESTUDIANTE.name);
+  // 2. La sesión del portal cambia sin que Moodle se entere (se borran las cookies del portal y de Keycloak, no la de
+  //    Moodle) y entra el profesor: Moodle cierra la sesión del estudiante y abre la del profesor (no la deja a medias).
+  const moodleCookie = (await context.cookies(MOODLE)).filter((c) => c.name === "MoodleSession");
+  await context.clearCookies();
+  await context.addCookies(moodleCookie);
+  expect(await moodleIdentity(a), "Moodle conserva todavía la sesión del estudiante").toBe(ESTUDIANTE.name);
+  expect(await portalLogin(a, PROFESOR)).toBe(true);
+  await openCampus(a);
+  expect(await moodleIdentity(a), "la sesión de Moodle del estudiante se reemplaza por la del profesor").toBe(PROFESOR.name);
   await context.close();
   await other.context().close();
 });
 
+/** Sigue el flujo real (Moodle start → portal → comprobante) sin abrir el enlace final (Fase 4.11). */
+async function ticketUrl(page: Page): Promise<string> {
+  let url: string = (await bff(page, "GET", "me/campus-link")).body.url;
+  for (let i = 0; i < 4 && !new URL(url).searchParams.has("ticket"); i++) {
+    url = new URL((await page.request.get(url, { maxRedirects: 0 })).headers()["location"], url).toString();
+  }
+  return url;
+}
+
 test("un enlace al campus es de un solo uso", async ({ browser }) => {
   const owner = await session(browser, "estudiante");
-  const link = (await bff(owner, "GET", "me/campus-link")).body.url as string;
+  const link = await ticketUrl(owner);
   await owner.goto(link);
   expect(await moodleIdentity(owner)).toBe(ESTUDIANTE.name);
   const stranger = await (await browser.newContext()).newPage();
@@ -126,23 +144,25 @@ test("un enlace al campus es de un solo uso", async ({ browser }) => {
 });
 
 test("un enlace manipulado o vencido no abre una sesión", async ({ browser }) => {
+  // En el navegador de quien pidió el enlace (Fase 4.11: tiene la cookie de vinculación), para que el rechazo solo
+  // pueda deberse a la manipulación o al vencimiento.
   const owner = await session(browser, "estudiante");
-  const link = new URL((await bff(owner, "GET", "me/campus-link")).body.url);
-  const page = await (await browser.newContext()).newPage();
+  const link = new URL(await ticketUrl(owner));
   const ticket = link.searchParams.get("ticket");
   expect(ticket, "el enlace lleva un comprobante firmado").toBeTruthy();
   // 1. Se cambia el usuario dentro del comprobante sin poder firmarlo.
   const [payload, signature] = ticket!.split(".");
   const data = JSON.parse(Buffer.from(payload, "base64url").toString());
   const forged = Buffer.from(JSON.stringify({ ...data, uid: data.uid + 1 })).toString("base64url");
-  await page.goto(`${MOODLE}/local/iinicia/sso.php?ticket=${forged}.${signature}`);
-  expect(await moodleIdentity(page)).toBe("sin sesión");
-  // 2. Un comprobante bien firmado pero vencido.
+  await owner.goto(`${MOODLE}/local/iinicia/sso.php?ticket=${forged}.${signature}`);
+  expect(await moodleIdentity(owner)).toBe("sin sesión");
+  // 2. Un comprobante bien firmado pero vencido, con la vinculación de un navegador nuevo del dueño.
+  const fresh = new URL(await ticketUrl(owner));
+  const freshData = JSON.parse(Buffer.from(fresh.searchParams.get("ticket")!.split(".")[0], "base64url").toString());
   const secret = process.env.MOODLE_SSO_SECRET!;
-  const old = Buffer.from(JSON.stringify({ ...data, iat: data.iat - 600, exp: data.exp - 600, jti: `${data.jti}x` })).toString("base64url");
+  const old = Buffer.from(JSON.stringify({ ...freshData, iat: freshData.iat - 600, exp: freshData.exp - 600, jti: `${freshData.jti}x` })).toString("base64url");
   const oldSig = createHmac("sha256", secret).update(old).digest("base64url");
-  await page.goto(`${MOODLE}/local/iinicia/sso.php?ticket=${old}.${oldSig}`);
-  expect(await moodleIdentity(page)).toBe("sin sesión");
+  await owner.goto(`${MOODLE}/local/iinicia/sso.php?ticket=${old}.${oldSig}`);
+  expect(await moodleIdentity(owner)).toBe("sin sesión");
   await owner.context().close();
-  await page.context().close();
 });
