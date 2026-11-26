@@ -28,14 +28,20 @@ export class UsersRepository {
   constructor(private readonly db: DbService) {}
 
   /** Identidad y roles vigentes para el guard de autenticación. */
-  findPrincipalBySub(sub: string) {
-    return this.db.one<AuthUser>(
+  /**
+   * Persona del token y si su sesión ya se cerró (Fase 5): por la sesión concreta (session_revocations) o por
+   * "cerrar todas las sesiones" (users.sessions_revoked_at, contra la hora de emisión del token).
+   */
+  findPrincipalBySub(sub: string, sid?: string, iat?: number) {
+    return this.db.one<AuthUser & { sessionRevoked: boolean }>(
       `SELECT u.id, u.oidc_sub AS sub, u.email, u.status,
               COALESCE(array_agg(DISTINCT r.role) FILTER (WHERE r.role IS NOT NULL), '{}') AS roles,
-              COALESCE(array_agg(DISTINCT r.program_id::text) FILTER (WHERE r.program_id IS NOT NULL), '{}') AS "programIds"
+              COALESCE(array_agg(DISTINCT r.program_id::text) FILTER (WHERE r.program_id IS NOT NULL), '{}') AS "programIds",
+              (u.sessions_revoked_at IS NOT NULL AND $3::bigint IS NOT NULL AND to_timestamp($3::bigint) <= u.sessions_revoked_at)
+                OR ($2::text IS NOT NULL AND EXISTS (SELECT 1 FROM session_revocations s WHERE s.sid = $2::text)) AS "sessionRevoked"
          FROM users u LEFT JOIN user_roles r ON r.user_id = u.id
         WHERE u.oidc_sub = $1 GROUP BY u.id`,
-      [sub],
+      [sub, sid ?? null, iat ?? null],
     );
   }
 

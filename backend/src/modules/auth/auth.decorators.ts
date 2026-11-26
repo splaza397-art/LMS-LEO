@@ -11,6 +11,8 @@ export interface AuthUser {
   programIds: string[];
   /** Sesión de Keycloak del token (claim sid): permite cerrar exactamente esa sesión al salir. */
   sid?: string;
+  /** Hora de emisión del token (segundos Unix). */
+  iat?: number;
 }
 
 // Claves de metadatos. El inventario de rutas (tools/route-inventory) las lee: no cambiarlas.

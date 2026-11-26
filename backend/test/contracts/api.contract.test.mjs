@@ -25,9 +25,15 @@ const ALLOWED_NEW_QUERY = new Set(['page', 'pageSize', 'sort', 'order', 'q', 'st
  * Rutas agregadas después de la referencia, cada una con su contrato completo. Agregar una ruta exige declararla
  * aquí; las rutas de la referencia siguen sin poder cambiar.
  * - Fase 4.10: POST /api/v1/me/logout, cierre de sesión coordinado (Keycloak y Moodle) de la persona del token.
+ * - Fase 5: cuerpo opcional LogoutDto en ese cierre (scope device o all; sin cuerpo, este dispositivo como antes), y
+ *   tres rutas de respuesta a incidentes con el permiso de suspender cuentas: listar las sesiones de una persona,
+ *   revocar una sesión concreta y revocar todas.
  */
 const APPROVED_NEW_ROUTES = {
-  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: null, params: [], query: [] },
+  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: 'LogoutDto', params: [], query: [] },
+  'GET /api/v1/admin/users/:id/sessions': { permission: 'users:suspend', public: false, httpCode: 200, throttle: null, body: null, params: ['id (ParseUUIDPipe)'], query: [] },
+  'DELETE /api/v1/admin/users/:id/sessions/:sid': { permission: 'users:suspend', public: false, httpCode: 200, throttle: null, body: null, params: ['id (ParseUUIDPipe)', 'sid (ParseUUIDPipe)'], query: [] },
+  'POST /api/v1/admin/users/:id/sessions/revoke': { permission: 'users:suspend', public: false, httpCode: 200, throttle: null, body: null, params: ['id (ParseUUIDPipe)'], query: [] },
 };
 
 /**

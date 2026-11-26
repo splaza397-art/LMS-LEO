@@ -7,7 +7,14 @@ import { PERMISSION_KEY, PUBLIC_KEY } from './auth.decorators';
 import { hasPermission, Permission } from './permissions';
 
 const issuer = `${config.keycloak.url}/realms/${config.keycloak.realm}`;
-const jwks = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`));
+/**
+ * Llaves públicas de Keycloak. Fase 5: se conservan 6 horas (jose usa 10 minutos por omisión). Con 10 minutos, si
+ * Keycloak se detenía, la API rechazaba todos los tokens en cuanto vencía la copia, aunque fueran válidos (encontrado en
+ * la prueba de fallas K0). Un token firmado con una llave desconocida (rotación) obliga a pedir las llaves otra vez
+ * (cada 30 s como máximo). La firma, el emisor, la audiencia y el algoritmo se validan igual. Si se retira una llave
+ * comprometida en Keycloak, reiniciar el backend para olvidarla de inmediato (documento 16, recuperación).
+ */
+const jwks = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`), { cacheMaxAge: 6 * 60 * 60 * 1000 });
 
 /**
  * Guard global: todo endpoint exige token salvo @Public. Los roles se leen de PostgreSQL en cada
@@ -27,6 +34,7 @@ export class AuthGuard implements CanActivate {
 
     let sub: string;
     let sid: string | undefined;
+    let iat: number | undefined;
     try {
       const { payload } = await jwtVerify(header.slice(7), jwks, {
         issuer,
@@ -35,14 +43,18 @@ export class AuthGuard implements CanActivate {
       });
       sub = String(payload.sub);
       sid = typeof payload.sid === 'string' ? payload.sid : undefined;
+      iat = typeof payload.iat === 'number' ? payload.iat : undefined;
     } catch {
       throw new UnauthorizedException('Token inválido o expirado');
     }
 
-    const user = await this.users.findPrincipalBySub(sub);
-    if (!user) throw new UnauthorizedException('Cuenta no registrada');
+    const found = await this.users.findPrincipalBySub(sub, sid, iat);
+    if (!found) throw new UnauthorizedException('Cuenta no registrada');
+    const { sessionRevoked, ...user } = found;
     if (user.status === 'suspendido') throw new ForbiddenException('Cuenta suspendida');
-    request.user = { ...user, sid };
+    // Fase 5: un token de una sesión ya cerrada (en este dispositivo o en todos) no vale aunque no haya vencido.
+    if (sessionRevoked) throw new UnauthorizedException('La sesión se cerró. Inicia sesión de nuevo.');
+    request.user = { ...user, sid, iat };
 
     const permission = this.reflector.getAllAndOverride<Permission>(PERMISSION_KEY, targets);
     if (permission && !hasPermission(user.roles, permission)) {

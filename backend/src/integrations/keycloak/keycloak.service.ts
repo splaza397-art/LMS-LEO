@@ -13,6 +13,16 @@ export interface NewIdentity {
   emailVerified?: boolean;
 }
 
+/** Sesión de Keycloak tal como la ve un administrador (sin IP ni datos del navegador). */
+export interface KeycloakSession {
+  id: string;
+  kind: 'en_linea' | 'offline';
+  started: number;
+  lastAccess: number;
+  clients: string[];
+}
+interface RawSession { id: string; start: number; lastAccess: number; clients?: Record<string, string> }
+
 @Injectable()
 export class KeycloakService {
   private readonly logger = new Logger(KeycloakService.name);
@@ -58,6 +68,31 @@ export class KeycloakService {
       if (response.status !== 404) throw new ServiceUnavailableException('Proveedor de identidad no disponible');
     }
     return true;
+  }
+
+  /** Fase 5: cierra todas las sesiones de la persona (en línea y offline, comprobado en Keycloak 26.4.7). */
+  async logoutAll(sub: string): Promise<void> {
+    const response = await this.request(`/users/${sub}/logout`, { method: 'POST' });
+    if (!response.ok) throw new ServiceUnavailableException('Keycloak no pudo cerrar las sesiones');
+  }
+
+  /** Fase 5: sesiones activas (en línea y offline) de la persona, para revocar una sesión comprometida. */
+  async listSessions(sub: string): Promise<KeycloakSession[]> {
+    const online = await this.request(`/users/${sub}/sessions`);
+    if (!online.ok) throw new ServiceUnavailableException('Keycloak no respondió');
+    const sessions = (await online.json()) as RawSession[];
+    const offline: RawSession[] = [];
+    for (const clientId of ['iinicia-android', 'iinicia-portal']) {
+      const client = await this.request(`/clients?clientId=${clientId}`);
+      const [found] = client.ok ? ((await client.json()) as { id: string }[]) : [];
+      if (!found) continue;
+      const res = await this.request(`/users/${sub}/offline-sessions/${found.id}`);
+      if (res.ok) offline.push(...((await res.json()) as RawSession[]));
+    }
+    const map = (s: RawSession, kind: 'en_linea' | 'offline'): KeycloakSession => ({
+      id: s.id, kind, started: s.start, lastAccess: s.lastAccess, clients: Object.values(s.clients ?? {}),
+    });
+    return [...sessions.map((s) => map(s, 'en_linea')), ...offline.map((s) => map(s, 'offline'))];
   }
 
   async findByEmail(email: string): Promise<string | null> {

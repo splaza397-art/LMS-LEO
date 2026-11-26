@@ -72,9 +72,15 @@ export class MoodleService {
   }
 
   /** Cierra todas las sesiones de Moodle de una persona (Fase 4.10). Devuelve cuántas había. */
-  /** Cierra las sesiones de Moodle abiertas hasta "before" (segundos Unix) y revoca los comprobantes emitidos hasta entonces. */
-  async logoutUser(userId: number, before: number): Promise<number> {
-    return (await this.call<{ closed: number }>('local_iinicia_logout_user', { userid: userId, before })).closed;
+  /**
+   * Cierra sesiones de Moodle de la persona. scope=device: solo las asociadas a la sesión de Keycloak kcsid (y las no
+   * asociadas anteriores a "before"); scope=all: todas las anteriores a "before" (segundos Unix). Revoca los
+   * comprobantes de esa sesión (device) o los emitidos hasta "before" (all).
+   */
+  async logoutUser(userId: number, before: number, target: { scope: 'device'; kcsid: string } | { scope: 'all' } = { scope: 'all' }): Promise<number> {
+    const params: Record<string, string | number> = { userid: userId, before, scope: target.scope };
+    if (target.scope === 'device') params.kcsid = target.kcsid;
+    return (await this.call<{ closed: number }>('local_iinicia_logout_user', params)).closed;
   }
 
   async overview(userId: number): Promise<MoodleCourse[]> {

@@ -1,4 +1,4 @@
-// Fases 4.10 y 4.11: comprobante de entrada al campus y cierre de sesión coordinado (sin red: servicios simulados).
+// Fases 4.10, 4.11 y 5: comprobante de entrada al campus y cierre de sesión coordinado (sin red: servicios simulados).
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
 import { describe, it } from 'node:test';
@@ -69,44 +69,58 @@ describe('Comprobante de entrada al campus', () => {
 
 describe('Cierre de sesión coordinado', () => {
   const user: AuthUser = { id: 'u1', sub: 's1', email: 'ana@ejemplo.test', status: 'activo', roles: ['estudiante'], programIds: [], sid: '11111111-2222-4333-8444-555555555555' };
+  const admin: AuthUser = { id: 'a1', sub: 'sa', email: 'admin@ejemplo.test', status: 'activo', roles: ['admin_academico'], programIds: [] };
 
-  function service(opts: { keycloak?: (sid: string) => Promise<boolean>; moodle?: (id: number, before: number) => Promise<number>; moodleUserId?: string | null }) {
-    const pending: Record<string, Date | null> = {};
+  type Target = { scope: 'device'; kcsid: string } | { scope: 'all' };
+  function service(opts: {
+    keycloak?: (sid: string) => Promise<boolean>;
+    keycloakAll?: (sub: string) => Promise<void>;
+    moodle?: (id: number, before: number, target: Target) => Promise<number>;
+    moodleUserId?: string | null;
+    targetRoles?: string[];
+    sessions?: { id: string }[];
+  }) {
+    const queue: { id: string; user_id: string; scope: 'device' | 'all'; kc_sid: string | null; at: Date }[] = [];
     const revoked: Record<string, { userId: string; confirmed: boolean }> = {};
-    const moodleCalls: { id: number; before: number }[] = [];
+    const revokeAll: Record<string, { at: Date; pending: boolean }> = {};
+    const moodleCalls: { id: number; before: number; target: Target }[] = [];
     const keycloakCalls: string[] = [];
-    const audits: unknown[] = [];
+    const audits: { action: string }[] = [];
     const s = new SessionService(
-      { endSession: async (sid: string) => { keycloakCalls.push(sid); return (opts.keycloak ?? (async () => true))(sid); } } as never,
-      { logoutUser: async (id: number, before: number) => { moodleCalls.push({ id, before }); return (opts.moodle ?? (async () => 1))(id, before); } } as never,
       {
-        snapshot: async () => ({ moodle_user_id: opts.moodleUserId === undefined ? '9' : opts.moodleUserId }),
-        setMoodleLogoutPending: async (id: string, value: boolean, at?: Date) => {
-          const current = pending[id];
-          pending[id] = value ? (current && at && current > at ? current : at ?? new Date()) : null;
-        },
-        pendingMoodleLogouts: async () => Object.entries(pending).filter(([, v]) => v)
-          .map(([id, at]) => ({ id, moodle_user_id: '9', before: Math.floor(at!.getTime() / 1000) })),
-        revokeSession: async (sid: string, userId: string, confirmed: boolean) => {
-          revoked[sid] = { userId, confirmed: revoked[sid]?.confirmed || confirmed };
-        },
+        endSession: async (sid: string) => { keycloakCalls.push(sid); return (opts.keycloak ?? (async () => true))(sid); },
+        logoutAll: async (sub: string) => { keycloakCalls.push(`all:${sub}`); return (opts.keycloakAll ?? (async () => {}))(sub); },
+        listSessions: async () => (opts.sessions ?? []).map((x) => ({ ...x, kind: 'offline', started: 0, lastAccess: 0, clients: [] })),
+      } as never,
+      { logoutUser: async (id: number, before: number, target: Target) => { moodleCalls.push({ id, before, target }); return (opts.moodle ?? (async () => 1))(id, before, target); } } as never,
+      {
+        snapshot: async (id: string) => ({ id, oidc_sub: `sub-${id}`, moodle_user_id: opts.moodleUserId === undefined ? '9' : opts.moodleUserId }),
+        roles: async () => opts.targetRoles ?? ['estudiante'],
+        queueMoodleLogout: async (userId: string, scope: 'device' | 'all', kcSid: string | null, at: Date) => { queue.push({ id: String(queue.length + 1), user_id: userId, scope, kc_sid: kcSid, at }); },
+        pendingMoodleLogouts: async () => queue.map((q) => ({ ...q, moodle_user_id: '9', before: Math.floor(q.at.getTime() / 1000) })),
+        doneMoodleLogout: async (id: string) => { queue.splice(queue.findIndex((q) => q.id === id), 1); },
+        revokeSession: async (sid: string, userId: string, confirmed: boolean) => { revoked[sid] = { userId, confirmed: revoked[sid]?.confirmed || confirmed }; },
         pendingKeycloakLogouts: async () => Object.entries(revoked).filter(([, v]) => !v.confirmed).map(([sid, v]) => ({ sid, user_id: v.userId })),
         confirmKeycloakLogout: async (sid: string) => { revoked[sid].confirmed = true; },
+        revokeAllSessions: async (userId: string, at: Date, pending: boolean) => { revokeAll[userId] = { at, pending: (revokeAll[userId]?.pending ?? false) || pending }; },
+        pendingRevokeAll: async () => Object.entries(revokeAll).filter(([, v]) => v.pending).map(([id]) => ({ id, oidc_sub: `sub-${id}` })),
+        doneRevokeAll: async (id: string) => { revokeAll[id].pending = false; },
         pruneSessionRevocations: async () => {},
       } as never,
-      { log: async (entry: unknown) => { audits.push(entry); } } as never,
+      { log: async (entry: { action: string }) => { audits.push(entry); } } as never,
     );
-    return { s, pending, revoked, moodleCalls, keycloakCalls, audits };
+    return { s, queue, revoked, revokeAll, moodleCalls, keycloakCalls, audits };
   }
 
-  it('cierre normal: Keycloak y Moodle confirman, y la sesión queda registrada como cerrada', async () => {
-    const { s, audits, revoked } = service({});
+  it('cierre normal (este dispositivo): Keycloak cierra su sid y Moodle solo las sesiones de ese sid', async () => {
+    const { s, audits, revoked, moodleCalls } = service({});
     assert.deepEqual(await s.logout(user), { keycloak: 'ok', moodle: 'ok', complete: true });
     assert.equal(audits.length, 1);
     assert.deepEqual(revoked[user.sid!], { userId: 'u1', confirmed: true });
+    assert.deepEqual(moodleCalls[0].target, { scope: 'device', kcsid: user.sid });
   });
 
-  it('Moodle recibe la hora del cierre para no tocar sesiones posteriores', async () => {
+  it('Moodle recibe la hora del cierre del servidor', async () => {
     const { s, moodleCalls } = service({});
     const now = Math.floor(Date.now() / 1000);
     await s.logout(user);
@@ -118,32 +132,41 @@ describe('Cierre de sesión coordinado', () => {
     // app dejaba viva la sesión de Moodle abierta justo antes de salir.
     const { s, moodleCalls } = service({});
     const now = Math.floor(Date.now() / 1000);
-    await (s.logout as (u: AuthUser, at?: number) => Promise<unknown>)(user, now - 77);
+    await (s.logout as (u: AuthUser, scope?: unknown) => Promise<unknown>)(user, now - 77);
     assert.ok(moodleCalls[0].before >= now, 'el corte no puede ser anterior a la hora del servidor');
   });
 
-  it('Moodle no responde: queda pendiente y no se informa un cierre completo', async () => {
-    const { s, pending } = service({ moodle: async () => { throw new Error('caído'); } });
-    assert.deepEqual(await s.logout(user), { keycloak: 'ok', moodle: 'pendiente', complete: false });
-    assert.ok(pending.u1);
+  it('sin sid no se identifica el dispositivo: Moodle cierra todo y no se confirma el cierre en Keycloak', async () => {
+    const { s, moodleCalls } = service({});
+    assert.equal((await s.logout({ ...user, sid: undefined })).complete, false);
+    assert.deepEqual(moodleCalls[0].target, { scope: 'all' });
   });
 
-  it('el reintento cierra en Moodle solo lo anterior al cierre pendiente', async () => {
+  it('Moodle no responde: queda en la cola con su sid y no se informa un cierre completo', async () => {
+    const { s, queue } = service({ moodle: async () => { throw new Error('caído'); } });
+    assert.deepEqual(await s.logout(user), { keycloak: 'ok', moodle: 'pendiente', complete: false });
+    assert.equal(queue.length, 1);
+    assert.equal(queue[0].scope, 'device');
+    assert.equal(queue[0].kc_sid, user.sid);
+  });
+
+  it('un reintento antiguo solo cierra en Moodle la sesión del sid original, con su hora original', async () => {
     let down = true;
-    const { s, pending, moodleCalls } = service({ moodle: async () => { if (down) throw new Error('caído'); return 2; } });
+    const { s, queue, moodleCalls } = service({ moodle: async () => { if (down) throw new Error('caído'); return 2; } });
     await s.logout(user);
-    const cutoff = moodleCalls[0].before;
+    const original = moodleCalls[0];
     down = false;
     await s.retryPendingLogouts();
-    assert.equal(pending.u1, null);
-    assert.equal(moodleCalls[1].before, cutoff, 'el reintento usa la hora del cierre, no la del reintento');
+    assert.equal(queue.length, 0);
+    assert.deepEqual(moodleCalls[1].target, { scope: 'device', kcsid: user.sid }, 'el reintento lleva el sid antiguo: una sesión nueva tiene otro');
+    assert.equal(moodleCalls[1].before, original.before, 'el reintento usa la hora del cierre, no la del reintento');
   });
 
   it('Keycloak no responde: queda pendiente, no se informa un cierre completo y el reintento cierra solo esa sesión', async () => {
     let down = true;
     const { s, revoked, keycloakCalls } = service({ keycloak: async () => { if (down) throw new ServiceUnavailableException(); return true; } });
     assert.deepEqual(await s.logout(user), { keycloak: 'pendiente', moodle: 'ok', complete: false });
-    assert.deepEqual(revoked[user.sid!], { userId: 'u1', confirmed: false }, 'la sesión ya cuenta como cerrada para el campus');
+    assert.deepEqual(revoked[user.sid!], { userId: 'u1', confirmed: false }, 'la sesión ya cuenta como cerrada para la API y el campus');
     await s.retryPendingLogouts();
     assert.equal(revoked[user.sid!].confirmed, false, 'sigue pendiente mientras Keycloak no responda');
     down = false;
@@ -152,15 +175,44 @@ describe('Cierre de sesión coordinado', () => {
     assert.deepEqual([...new Set(keycloakCalls)], [user.sid], 'una sesión nueva (otro sid) nunca se cierra por el reintento');
   });
 
+  it('cerrar todas las sesiones: Keycloak cierra todo, Moodle todo, y los tokens anteriores dejan de valer', async () => {
+    const { s, keycloakCalls, moodleCalls, revokeAll, audits } = service({});
+    assert.deepEqual(await s.logout(user, 'all'), { keycloak: 'ok', moodle: 'ok', complete: true });
+    assert.deepEqual(keycloakCalls, ['all:s1']);
+    assert.deepEqual(moodleCalls[0].target, { scope: 'all' });
+    assert.ok(revokeAll.u1 && !revokeAll.u1.pending);
+    assert.equal(audits[0].action, 'auth.logout_all');
+  });
+
+  it('cerrar todas con Keycloak caído: los tokens dejan de valer ya y el reintento cierra en Keycloak después', async () => {
+    let down = true;
+    const { s, revokeAll } = service({ keycloakAll: async () => { if (down) throw new ServiceUnavailableException(); } });
+    assert.equal((await s.logout(user, 'all')).complete, false);
+    assert.equal(revokeAll.u1.pending, true);
+    down = false;
+    await s.retryPendingLogouts();
+    assert.equal(revokeAll.u1.pending, false);
+  });
+
+  it('administración: revocar una sesión comprometida exige que sea de esa persona', async () => {
+    const sid = '99999999-2222-4333-8444-555555555555';
+    const { s, moodleCalls, audits } = service({ sessions: [{ id: sid }] });
+    assert.equal((await s.revokeSession(admin, 'u2', sid)).complete, true);
+    assert.deepEqual(moodleCalls[0].target, { scope: 'device', kcsid: sid });
+    assert.equal(audits[0].action, 'security.session_revoked');
+    await assert.rejects(s.revokeSession(admin, 'u2', '00000000-2222-4333-8444-555555555555'), /no existe/);
+  });
+
+  it('administración: solo un superadministrador revoca las sesiones de otro superadministrador', async () => {
+    const { s } = service({ targetRoles: ['superadmin'] });
+    await assert.rejects(s.revokeAll(admin, 'u2'), /superadministrador/);
+    assert.equal((await s.revokeAll({ ...admin, roles: ['superadmin'] }, 'u2')).complete, true);
+  });
+
   it('repetir el cierre es inofensivo (idempotente)', async () => {
     const { s } = service({});
     assert.equal((await s.logout(user)).complete, true);
     assert.equal((await s.logout(user)).complete, true);
-  });
-
-  it('sin sid en el token no se puede confirmar el cierre en Keycloak', async () => {
-    const { s } = service({});
-    assert.equal((await s.logout({ ...user, sid: undefined })).complete, false);
   });
 
   it('persona sin cuenta en Moodle (aspirante): basta con Keycloak', async () => {

@@ -25,23 +25,44 @@ export class SynchronizationRepository {
     );
   }
 
-  /** Personas con cierre de sesión de Moodle pendiente (Moodle no respondió al salir), con la hora del cierre. */
+  /**
+   * Cierres de Moodle pendientes (Moodle no respondió), cada uno con su alcance, su sesión de Keycloak y la hora del
+   * cierre original (Fase 5; antes, users.moodle_logout_pending_at).
+   */
   pendingMoodleLogouts() {
-    return this.db.query<{ id: string; moodle_user_id: string; before: number }>(
-      `SELECT id, moodle_user_id, floor(extract(epoch FROM moodle_logout_pending_at))::int AS before FROM users
-        WHERE moodle_logout_pending_at IS NOT NULL AND moodle_user_id IS NOT NULL
-        ORDER BY moodle_logout_pending_at LIMIT 25`,
+    return this.db.query<{ id: string; user_id: string; moodle_user_id: string; scope: 'device' | 'all'; kc_sid: string | null; before: number }>(
+      `SELECT q.id, q.user_id, u.moodle_user_id, q.scope, q.kc_sid, floor(extract(epoch FROM q.requested_at))::int AS before
+         FROM moodle_logout_queue q JOIN users u ON u.id = q.user_id
+        WHERE u.moodle_user_id IS NOT NULL
+        ORDER BY q.requested_at LIMIT 25`,
     );
   }
 
-  /**
-   * Marca o borra el cierre pendiente. Con varios cierres sin confirmar se conserva la hora más reciente, para que el
-   * reintento cierre todas las sesiones de Moodle abiertas hasta el último cierre (y ninguna posterior).
-   */
-  setMoodleLogoutPending(userId: string, pending: boolean, at?: Date) {
-    return pending
-      ? this.db.query(`UPDATE users SET moodle_logout_pending_at = GREATEST(moodle_logout_pending_at, $2) WHERE id = $1`, [userId, at ?? new Date()])
-      : this.db.query(`UPDATE users SET moodle_logout_pending_at = NULL WHERE id = $1`, [userId]);
+  queueMoodleLogout(userId: string, scope: 'device' | 'all', kcSid: string | null, at: Date) {
+    return this.db.query(
+      `INSERT INTO moodle_logout_queue (user_id, scope, kc_sid, requested_at) VALUES ($1, $2, $3, $4)`,
+      [userId, scope, kcSid, at],
+    );
+  }
+
+  doneMoodleLogout(id: string) {
+    return this.db.query(`DELETE FROM moodle_logout_queue WHERE id = $1`, [id]);
+  }
+
+  /** Fase 5: los tokens emitidos hasta ahora dejan de valer (cerrar todas las sesiones o revocación por seguridad). */
+  revokeAllSessions(userId: string, at: Date, keycloakPending: boolean) {
+    return this.db.query(
+      `UPDATE users SET sessions_revoked_at = GREATEST(sessions_revoked_at, $2), sessions_revoke_pending = sessions_revoke_pending OR $3 WHERE id = $1`,
+      [userId, at, keycloakPending],
+    );
+  }
+
+  pendingRevokeAll() {
+    return this.db.query<{ id: string; oidc_sub: string }>(`SELECT id, oidc_sub FROM users WHERE sessions_revoke_pending LIMIT 25`);
+  }
+
+  doneRevokeAll(userId: string) {
+    return this.db.query(`UPDATE users SET sessions_revoke_pending = false WHERE id = $1`, [userId]);
   }
 
   /** Fase 4.11: registra la sesión de Keycloak cerrada (confirmada o no). Repetir el cierre no la duplica. */
