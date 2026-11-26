@@ -22,7 +22,8 @@ interface IiniciaApi {
     suspend fun markRead(id: String)
 
     /** URL de inicio de sesión único en Moodle; el backend valida que el curso o la actividad sean del usuario. */
-    suspend fun campusLink(courseId: Int? = null, cmid: Int? = null): String
+    /** Sin bind: enlace al paso "start" de Moodle. Con bind (Fase 4.11): enlace con el comprobante vinculado a ese navegador. */
+    suspend fun campusLink(courseId: Int? = null, cmid: Int? = null, bind: String? = null): String
 
     /**
      * Cierre de sesión coordinado (POST /me/logout): el backend cierra la sesión de Keycloak del token y las de
@@ -45,12 +46,12 @@ class HttpIiniciaApi(private val client: ApiClient) : IiniciaApi {
     override suspend fun logout(bearer: String?): Boolean =
         client.json.decodeFromString<LogoutResult>(client.request("me/logout", "POST", bearer = bearer)).complete
 
-    override suspend fun campusLink(courseId: Int?, cmid: Int?): String {
-        val query = when {
-            cmid != null -> "?cmid=$cmid"
-            courseId != null -> "?courseId=$courseId"
-            else -> ""
-        }
+    override suspend fun campusLink(courseId: Int?, cmid: Int?, bind: String?): String {
+        val params = listOfNotNull(
+            cmid?.let { "cmid=$it" } ?: courseId?.let { "courseId=$it" },
+            bind?.let { "bind=${URLEncoder.encode(it, "UTF-8")}" },
+        )
+        val query = if (params.isEmpty()) "" else params.joinToString("&", prefix = "?")
         return client.get<CampusLink>("me/campus-link$query").url
     }
 }

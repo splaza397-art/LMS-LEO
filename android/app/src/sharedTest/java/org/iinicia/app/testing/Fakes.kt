@@ -127,7 +127,10 @@ class FakeApi : IiniciaApi {
     override suspend fun notifications(): List<Notice> { calls.add("notifications"); return onNotifications() }
     override suspend fun markRead(id: String) { calls.add("markRead/$id"); onMarkRead(id) }
     override suspend fun logout(bearer: String?): Boolean { calls.add("logout"); logoutBearers.add(bearer); return onLogout(bearer) }
-    override suspend fun campusLink(courseId: Int?, cmid: Int?): String { calls.add("campusLink/$courseId/$cmid"); return onCampusLink(courseId, cmid) }
+    val campusBinds = mutableListOf<String?>()
+    override suspend fun campusLink(courseId: Int?, cmid: Int?, bind: String?): String {
+        calls.add("campusLink/$courseId/$cmid"); campusBinds.add(bind); return onCampusLink(courseId, cmid)
+    }
 }
 
 class FakeScheduler : NoticeScheduler {

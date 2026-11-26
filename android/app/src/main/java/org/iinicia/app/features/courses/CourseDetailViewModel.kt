@@ -19,6 +19,7 @@ import org.iinicia.app.core.common.loadFrom
 import org.iinicia.app.core.security.Session
 import org.iinicia.app.core.security.SessionExpiredException
 import org.iinicia.app.data.models.Course
+import org.iinicia.app.data.repositories.CampusFlowException
 import org.iinicia.app.data.repositories.CourseRepository
 
 class CourseDetailViewModel(
@@ -65,6 +66,8 @@ internal suspend fun campusEvent(session: Session, link: suspend () -> String): 
 } catch (_: SessionExpiredException) {
     session.clearSession()
     UiEvent.Message("Tu sesión terminó. Inicia sesión de nuevo.")
+} catch (e: CampusFlowException) {
+    UiEvent.Message(e.message!!)
 } catch (e: Exception) {
     UiEvent.Message(friendlyMessage(e))
 }
