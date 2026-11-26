@@ -104,6 +104,13 @@ if (strlen($ssosecret) < 32) {
 }
 set_config('ssosecret', $ssosecret, 'local_iinicia');
 
+// Portal al que el paso "start" de sso.php manda el navegador (Fase 4.11). Es un destino fijo: nunca sale de la URL.
+$portalurl = rtrim((string) getenv('PORTAL_PUBLIC_URL'), '/');
+if (!preg_match('#^https?://[^/\s]+$#', $portalurl)) {
+    cli_error('[iinicia] Falta PORTAL_PUBLIC_URL (por ejemplo, https://portal.ejemplo).');
+}
+set_config('portalurl', $portalurl, 'local_iinicia');
+
 // 3. Cuenta y rol de servicio con solo las capacidades necesarias.
 $system = context_system::instance();
 $svc = $DB->get_record('user', ['username' => 'iinicia_ws', 'deleted' => 0]);

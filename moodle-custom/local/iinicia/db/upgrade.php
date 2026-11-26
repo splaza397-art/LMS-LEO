@@ -24,5 +24,19 @@ function xmldb_local_iinicia_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026112500, 'local', 'iinicia');
     }
+
+    if ($oldversion < 2026112600) {
+        // Fase 4.11: revocación de comprobantes al cerrar sesión en IINICIA.
+        $table = new xmldb_table('local_iinicia_revocation');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timerevoked', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN_UNIQUE, ['userid'], 'user', ['id']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026112600, 'local', 'iinicia');
+    }
     return true;
 }
