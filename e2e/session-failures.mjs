@@ -72,13 +72,13 @@ const reauthCookie = async (page) => (await page.context().cookies('http://local
   const reached = await page.request.get((await link.json()).url, { maxRedirects: 0, timeout: 10_000 }).then(() => true).catch(() => false);
   check('M0 con Moodle detenido, entrar al campus falla sin abrir otra cuenta y el portal sigue con la sesión', !reached && (await (await page.request.get('http://localhost:3000/api/bff/v1/me', { headers: { origin: 'http://localhost:3000' } })).json()).email === 'estudiante@iinicia.test');
   await logoutClick(page);
-  check('M2 cierre con Moodle detenido: queda pendiente en el backend', sql("select moodle_logout_pending_at is not null from users where email='estudiante@iinicia.test'") === 't');
+  check('M2 cierre con Moodle detenido: queda pendiente en el backend', sql("select count(*) > 0 from moodle_logout_queue q join users u on u.id = q.user_id where u.email='estudiante@iinicia.test'") === 't');
   check('M3 el portal marca reautenticación (cierre no confirmado)', await reauthCookie(page));
   check('M4 entra el profesor: Keycloak pide credenciales', await portalLogin(page, 'profesor'));
   docker(...COMPOSE, 'start', 'moodle');
   check('M5 Moodle vuelve', (await waitHealthy('moodle')) === 'healthy');
   let pending = 't';
-  for (let i = 0; i < 40 && pending === 't'; i++) { await sleep(5000); pending = sql("select moodle_logout_pending_at is not null from users where email='estudiante@iinicia.test'"); }
+  for (let i = 0; i < 40 && pending === 't'; i++) { await sleep(5000); pending = sql("select count(*) > 0 from moodle_logout_queue q join users u on u.id = q.user_id where u.email='estudiante@iinicia.test'"); }
   check('M6 el reintento cierra las sesiones de Moodle pendientes', pending === 'f');
   check('M7 acceso directo a Moodle ya no es del estudiante', (await moodleIdentity(page)) !== 'Demo Estudiante');
   await page.goto(early).catch(() => {});
@@ -119,6 +119,30 @@ const reauthCookie = async (page) => (await page.context().cookies('http://local
   await campus(page);
   check('K7 el campus abre con el profesor', (await moodleIdentity(page)) === 'Demo Docente');
   check('K8 la cookie de reautenticación se borró tras entrar', !(await reauthCookie(page)));
+  await page.context().close();
+}
+
+// --- Escenario 3 (Fase 5): Keycloak detenido al cerrar sesión y SIN reintento del backend. El siguiente inicio de
+// sesión del portal cierra primero la sesión anterior con el id_token_hint guardado: no muestra la cuenta anterior.
+{
+  const page = await (await browser.newContext()).newPage();
+  await portalLogin(page, 'estudiante');
+  docker(...COMPOSE, 'stop', 'keycloak');
+  await logoutClick(page);
+  check('H1 el portal marca reautenticación (Keycloak no confirmó)', await reauthCookie(page));
+  // Se desactiva el reintento de esa sesión para comprobar solo el mecanismo del portal.
+  sql("update session_revocations set keycloak_confirmed_at = now() where keycloak_confirmed_at is null and user_id = (select id from users where email='estudiante@iinicia.test')");
+  docker(...COMPOSE, 'start', 'keycloak');
+  check('H2 Keycloak vuelve', (await waitHealthy('keycloak')) === 'healthy');
+  await page.goto('http://localhost:3000/auth/login?returnTo=/mi-iinicia');
+  await page.waitForURL((u) => u.port === '8180' && u.pathname.includes('/auth'), { timeout: 30_000 }).catch(() => {});
+  await page.waitForLoadState('load');
+  check('H3 sin reintento del backend, el inicio de sesión no muestra la cuenta anterior', (await page.locator('#kc-attempted-username').count()) === 0 && (await page.locator('#username').count()) === 1);
+  await page.fill('#username', 'profesor@iinicia.test'); await page.fill('#password', process.env.DEMO_PASSWORD); await page.click('#kc-login');
+  await page.waitForURL(/localhost:3000\/mi-iinicia/);
+  const me = await page.request.get('http://localhost:3000/api/bff/v1/me', { headers: { origin: 'http://localhost:3000' } });
+  check('H4 entra el profesor con credenciales', (await me.json()).email === 'profesor@iinicia.test');
+  check('H5 la cookie de reautenticación se borró tras entrar', !(await reauthCookie(page)));
   await page.context().close();
 }
 
