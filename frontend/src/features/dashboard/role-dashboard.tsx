@@ -58,7 +58,7 @@ export function RoleDashboard({ me }: { me: Me }) {
       <aside className="min-w-0 space-y-6">
         {show.upcoming && <section className="card"><h2 className="mb-3 font-bold">Próximas actividades</h2><Suspense fallback={<Loading />}><UpcomingList /></Suspense></section>}
         <section className="card"><h2 className="mb-3 font-bold">Avisos</h2><Suspense fallback={<Loading />}><NoticesList /></Suspense></section>
-        <section className="card"><h2 className="mb-3 font-bold">Mi perfil</h2><p className="mb-3 text-sm muted">{me.email}</p><ProfileForm firstName={me.firstName} lastName={me.lastName} phone={me.phone} /></section>
+        <section className="card"><h2 className="mb-3 font-bold">Mi perfil</h2><p className="mb-3 text-sm muted">{me.email}</p><ProfileForm firstName={me.firstName} lastName={me.lastName} phone={me.phone} /><form action="/auth/logout" method="post" className="mt-4 border-t pt-3"><input type="hidden" name="scope" value="all" /><p className="mb-2 text-sm muted">¿Usaste un equipo compartido o perdiste un dispositivo? Cierra la sesión en la app, el portal y el campus de todos tus dispositivos.</p><button className="btn-outline">Cerrar sesión en todos los dispositivos</button></form></section>
       </aside>
     </div>
   );

@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { COOKIES, cookieOptions, oidcEndpoint, seal } from "@/lib/session-core";
-import { loginPrompt, REAUTH_COOKIE } from "@/lib/logout-policy";
+import { COOKIES, cookieOptions, oidcEndpoint, seal, unseal } from "@/lib/session-core";
+import { loginPrompt, REAUTH_COOKIE, REAUTH_MAX_AGE, reauthStep } from "@/lib/logout-policy";
 
 const b64 = (bytes: Buffer) => bytes.toString("base64url");
 const safePath = (value: string | null) =>
@@ -13,6 +13,20 @@ export async function GET(request: NextRequest) {
   const verifier = b64(randomBytes(48));
   const challenge = b64(createHash("sha256").update(verifier).digest());
   const returnTo = safePath(request.nextUrl.searchParams.get("returnTo"));
+
+  // Fase 5: tras un cierre no confirmado, se cierra primero en Keycloak la sesión que quedó en el navegador (con el
+  // id_token_hint guardado) y se vuelve aquí. La cookie se marca como usada antes, para no repetirlo.
+  const reauthRaw = request.cookies.get(REAUTH_COOKIE)?.value;
+  const reauth = reauthRaw ? ((await unseal<{ hint?: string }>(reauthRaw)) ?? {}) : null;
+  if (reauthStep(reauth) === "cerrar_sesion_anterior") {
+    const logout = new URL(oidcEndpoint("logout"));
+    logout.searchParams.set("client_id", process.env.OIDC_CLIENT_ID!);
+    logout.searchParams.set("id_token_hint", reauth!.hint!);
+    logout.searchParams.set("post_logout_redirect_uri", `${process.env.PORTAL_URL}/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
+    const response = NextResponse.redirect(logout);
+    response.cookies.set(REAUTH_COOKIE, await seal({}, REAUTH_MAX_AGE), { ...cookieOptions, maxAge: REAUTH_MAX_AGE });
+    return response;
+  }
 
   const url = new URL(oidcEndpoint("auth"));
   url.search = new URLSearchParams({
