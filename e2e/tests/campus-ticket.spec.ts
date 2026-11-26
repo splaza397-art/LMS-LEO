@@ -189,3 +189,29 @@ test("14. no redirige a destinos fuera del campus", async ({ browser }) => {
   }
   await owner.context().close();
 });
+
+test("15. un enlace inválido no expulsa del campus a quien ya tiene sesión (Fase 5)", async ({ browser }) => {
+  const owner = await session(browser, "estudiante");
+  await redeem(owner, await campusTicket(owner));
+  expect(await moodleIdentity(owner)).toBe(ESTUDIANTE);
+  // Un comprobante bien formado de este navegador, para derivar las variantes inválidas.
+  const url = await campusTicket(owner);
+  const u = new URL(url);
+  const [payload, signature] = u.searchParams.get("ticket")!.split(".");
+  const tampered = new URL(url);
+  tampered.searchParams.set("ticket", `${Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), want: "/admin/" })).toString("base64url")}.${signature}`);
+  const expired = resign(url, (d) => ({ ...d, iat: (d.iat as number) - 600, exp: (d.exp as number) - 600 }));
+  const other = await session(browser, "profesor");
+  const foreign = await campusTicket(other); // de otro navegador (sin su cookie de vinculación)
+  for (const [name, bad] of [["manipulado", tampered.toString()], ["vencido", expired], ["de otro navegador", foreign], ["basura", `${MOODLE}/local/iinicia/sso.php?ticket=x.y`]]) {
+    await redeem(owner, bad);
+    expect(await moodleIdentity(owner), `tras un enlace ${name}, la sesión legítima sigue`).toBe(ESTUDIANTE);
+  }
+  // Y un enlace ya usado tampoco expulsa.
+  await redeem(owner, url);
+  expect(await moodleIdentity(owner)).toBe(ESTUDIANTE);
+  await redeem(owner, url);
+  expect(await moodleIdentity(owner), "tras un enlace ya usado, la sesión legítima sigue").toBe(ESTUDIANTE);
+  await owner.context().close();
+  await other.context().close();
+});

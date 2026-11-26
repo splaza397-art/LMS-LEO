@@ -1,0 +1,10 @@
+Fase 5 (etapas 5.3 y 5.4) - pruebas nuevas ANTES de la corrección (código 4b95af1, main tras integrar la Fase 4), 25/11/2026
+Resultado: 3 fallaron.
+
+FALLA campus-ticket 15. un enlace inválido no expulsa del campus a quien ya tiene sesión
+      "tras un enlace manipulado, la sesión legítima sigue" - Expected: "Demo Estudiante", Received: "sin sesión"
+FALLA session-devices: cerrar sesión en un dispositivo no cierra el campus abierto en otro
+      "el otro dispositivo conserva su campus" - Expected: "Demo Estudiante", Received: "sin sesión"
+FALLA session-devices: un reintento antiguo de cierre no cierra la sesión nueva de la misma persona
+      No existe asociación entre la sesión de Moodle y la sesión de Keycloak (tabla mdl_local_iinicia_session_link
+      inexistente): el reintento solo podía cerrar por hora, lo que alcanza sesiones nuevas de la misma persona.
