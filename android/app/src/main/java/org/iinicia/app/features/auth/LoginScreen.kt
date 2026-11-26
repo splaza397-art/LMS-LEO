@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,7 +32,7 @@ import org.iinicia.app.R
 import org.iinicia.app.ui.theme.Navy
 
 @Composable
-fun LoginScreen(error: String?, onLogin: () -> Unit) {
+fun LoginScreen(error: String?, onLogin: () -> Unit, notice: String? = null) {
     Surface(color = Navy, modifier = Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp),
@@ -51,7 +54,11 @@ fun LoginScreen(error: String?, onLogin: () -> Unit) {
             ) { Text("Iniciar sesión", fontWeight = FontWeight.SemiBold) }
             error?.let {
                 Spacer(Modifier.height(16.dp))
-                Text(it, color = Color(0xFFFECACA))
+                Text(it, color = Color(0xFFFECACA), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            }
+            notice?.let {
+                Spacer(Modifier.height(16.dp))
+                Text(it, color = Color(0xFFBFDBFE), textAlign = TextAlign.Center, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
         }
     }

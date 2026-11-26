@@ -29,12 +29,11 @@ import org.iinicia.app.ui.theme.IiniciaTheme
 class MainActivity : ComponentActivity() {
     private val container get() = (application as IiniciaApp).container
     private val auth: AuthViewModel by viewModels {
-        viewModelFactory { initializer { AuthViewModel(container.auth, container.scheduler) } }
+        viewModelFactory { initializer { AuthViewModel(container.auth, container.scheduler, container.api) } }
     }
     private val deepLink = MutableStateFlow<Uri?>(null)
 
     private val loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { auth.onLoginResult(it.data) }
-    private val logoutLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) container.scheduler.checkNow()
     }
@@ -46,7 +45,6 @@ class MainActivity : ComponentActivity() {
         if (container.auth.signedIn.value) container.scheduler.schedule()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { auth.endSession.collect(logoutLauncher::launch) }
                 launch { auth.askNotifications.collect { requestNotificationPermission() } }
             }
         }

@@ -21,6 +21,8 @@ const s = {
   KEYCLOAK_ADMIN_PASSWORD: secret(),
   MOODLE_ADMIN_PASSWORD: `Aa1!${secret(12)}`,
   MOODLE_WS_TOKEN: secret(16),
+  // Firma de los comprobantes de entrada al campus; lo comparten el backend y Moodle (Fase 4.10).
+  MOODLE_SSO_SECRET: secret(32),
   KC_PORTAL_CLIENT_SECRET: secret(),
   KC_MOODLE_CLIENT_SECRET: secret(),
   KC_BACKEND_CLIENT_SECRET: secret(),
@@ -45,6 +47,7 @@ const files = {
     KEYCLOAK_BACKEND_CLIENT_SECRET: s.KC_BACKEND_CLIENT_SECRET,
     MOODLE_URL: urls.MOODLE_PUBLIC_URL,
     MOODLE_WS_TOKEN: s.MOODLE_WS_TOKEN,
+    MOODLE_SSO_SECRET: s.MOODLE_SSO_SECRET,
     DEMO_PASSWORD: `Demo-${secret(6)}A1`,
     // DEV: las cuentas demo y las pruebas automaticas no tienen autenticador. En STAGING/PROD dejar en true.
     MFA_PRIVILEGED_ROLES: 'false',

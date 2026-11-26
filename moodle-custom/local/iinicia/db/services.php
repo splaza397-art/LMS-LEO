@@ -44,6 +44,12 @@ $functions = [
         'type' => 'read',
         'capabilities' => 'local/iinicia:syncidentity',
     ],
+    'local_iinicia_logout_user' => [
+        'classname' => 'local_iinicia\external\logout_user',
+        'description' => 'Cierra todas las sesiones de Moodle de una persona al cerrar sesion en IINICIA.',
+        'type' => 'write',
+        'capabilities' => 'local/iinicia:syncidentity',
+    ],
 ];
 
 $services = [
@@ -57,6 +63,7 @@ $services = [
             'local_iinicia_set_system_role',
             'local_iinicia_set_cohort_member',
             'local_iinicia_course_progress',
+            'local_iinicia_logout_user',
         ],
         'restrictedusers' => 1,
         'enabled' => 1,

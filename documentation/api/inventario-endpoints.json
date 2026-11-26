@@ -511,6 +511,7 @@
     "body": null,
     "params": [],
     "query": [
+      "bind",
       "cmid",
       "courseId"
     ]
@@ -561,6 +562,17 @@
     "params": [
       "token"
     ],
+    "query": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/me/logout",
+    "permission": null,
+    "public": false,
+    "httpCode": 200,
+    "throttle": null,
+    "body": null,
+    "params": [],
     "query": []
   },
   {

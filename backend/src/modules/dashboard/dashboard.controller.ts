@@ -26,10 +26,15 @@ export class DashboardController {
   }
 
   @Get('campus-link')
-  @ApiOptionalQueries('courseId', 'cmid')
+  @ApiOptionalQueries('courseId', 'cmid', 'bind')
   @RequirePermission('campus:access')
-  campusLink(@CurrentUser() user: AuthUser, @Query('courseId') courseId?: string, @Query('cmid') cmid?: string) {
-    return this.dashboard.campusLink(user, courseId, cmid);
+  campusLink(
+    @CurrentUser() user: AuthUser,
+    @Query('courseId') courseId?: string,
+    @Query('cmid') cmid?: string,
+    @Query('bind') bind?: string,
+  ) {
+    return this.dashboard.campusLink(user, courseId, cmid, bind);
   }
 
   @Get('teaching')

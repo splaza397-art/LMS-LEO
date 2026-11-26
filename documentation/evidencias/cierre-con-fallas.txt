@@ -1,0 +1,27 @@
+Fase 4.10 - e2e/session-failures.mjs (25/11/2026): 17 de 17 comprobaciones correctas
+M1-M8: cierre con Moodle detenido, reintento y cambio a profesor
+K1-K8: cierre con Keycloak detenido; Keycloak pide la contraseña de la cuenta anterior (no entra solo) y permite reiniciar; el portal y Moodle quedan con el profesor
+
+Fase 4.11 - e2e/session-failures.mjs (25/11/2026): 22 de 22 comprobaciones correctas
+OK M0  con Moodle detenido, entrar al campus falla sin abrir otra cuenta y el portal sigue con la sesión
+OK M1  antes: Moodle con la sesión del estudiante
+OK M2  cierre con Moodle detenido: queda pendiente en el backend
+OK M3  el portal marca reautenticación (cierre no confirmado)
+OK M4  entra el profesor: Keycloak pide credenciales
+OK M5  Moodle vuelve
+OK M6  el reintento cierra las sesiones de Moodle pendientes
+OK M7  acceso directo a Moodle ya no es del estudiante
+OK M7b el comprobante emitido antes del cierre (Moodle caído) ya no sirve
+OK M8  el campus abre con el profesor
+OK K1  antes: Moodle con la sesión del estudiante
+OK K0  con Keycloak detenido, el campus abre con la cuenta del portal
+OK K2  el portal marca reautenticación (Keycloak no confirmó)
+OK K3  Moodle sí cerró: acceso directo ya no es del estudiante
+OK K3b el comprobante emitido antes del cierre ya no sirve
+OK K4  Keycloak vuelve
+OK K4b el reintento cierra en Keycloak la sesión que quedó abierta
+OK K4c el siguiente inicio de sesión no muestra la cuenta anterior
+OK K5  entra el profesor: Keycloak pide credenciales aunque quede la sesión del estudiante en el navegador
+OK K6  el portal es del profesor
+OK K7  el campus abre con el profesor
+OK K8  la cookie de reautenticación se borró tras entrar

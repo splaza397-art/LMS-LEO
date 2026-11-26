@@ -48,11 +48,12 @@ fun AppRoot(
 ) {
     val signedIn by auth.signedIn.collectAsStateWithLifecycle()
     val error by auth.loginError.collectAsStateWithLifecycle()
+    val notice by auth.logoutNotice.collectAsStateWithLifecycle()
     val session: SessionViewModels = viewModel()
     LaunchedEffect(signedIn) { if (!signedIn) session.reset() }
 
     if (!signedIn) {
-        LoginScreen(error, onLogin)
+        LoginScreen(error, onLogin, notice)
     } else {
         val store = session.store
         val owner = remember(store) { object : ViewModelStoreOwner { override val viewModelStore = store } }

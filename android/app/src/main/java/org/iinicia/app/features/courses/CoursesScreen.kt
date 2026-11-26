@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.iinicia.app.data.models.Course
 import org.iinicia.app.ui.components.EmptyState
@@ -16,6 +18,7 @@ import org.iinicia.app.ui.components.ScreenContent
 
 @Composable
 fun CoursesScreen(viewModel: CoursesViewModel, open: (Int, String?) -> Unit) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenContent(state, onRefresh = viewModel::refresh) { courses -> CourseList(courses, open) }
 }

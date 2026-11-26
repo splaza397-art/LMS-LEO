@@ -37,6 +37,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.iinicia.app.di.AppContainer
+import org.iinicia.app.data.repositories.CampusCallback
+import org.iinicia.app.features.courses.CampusViewModel
 import org.iinicia.app.features.courses.CourseDetailScreen
 import org.iinicia.app.features.courses.CourseDetailViewModel
 import org.iinicia.app.features.courses.CoursesScreen
@@ -68,9 +70,25 @@ fun MainScaffold(
     val onCourse = destination?.hasRoute<CourseRoute>() == true
     val openCourse: (Int, String?) -> Unit = { id, title -> nav.navigate(CourseRoute(id, title)) }
 
+    val campus = viewModel { CampusViewModel(container.courses, container.auth) }
+    EventEffect(campus.events, snackbar, onOpenUrl)
+
     // Los deep links llegan aquí solo con sesión; sin sesión quedan pendientes hasta iniciarla.
     LaunchedEffect(link) {
         val uri = link ?: return@LaunchedEffect
+        if (uri.scheme == "iinicia" && uri.host == "campus") {
+            // Vuelta del paso de vinculación de Moodle: no es una pantalla, se completa la entrada al campus.
+            campus.complete(
+                CampusCallback(
+                    state = uri.getQueryParameter("state"),
+                    bind = uri.getQueryParameter("bind"),
+                    courseId = uri.getQueryParameter("courseId")?.toIntOrNull(),
+                    cmid = uri.getQueryParameter("cmid")?.toIntOrNull(),
+                ),
+            )
+            deepLink.value = null
+            return@LaunchedEffect
+        }
         when (val route = deepLinkRoute(uri.scheme, uri.host, uri.lastPathSegment)) {
             null -> Unit
             is CourseRoute -> nav.navigate(route)
@@ -154,9 +172,17 @@ private fun BottomBar(nav: NavHostController, destination: NavDestination?) {
     }
 }
 
-/** Cambia de pestaña conservando el estado de cada una (patrón de navegación inferior de Material). */
-fun NavHostController.navigateToTab(route: Any) = navigate(route) {
-    popUpTo(graph.findStartDestination().id) { saveState = true }
-    launchSingleTop = true
-    restoreState = true
+/**
+ * Cambia de pestaña conservando el estado de cada una (patrón de navegación inferior de Material).
+ * Si la pestaña ya está en la pila (por ejemplo, Inicio con un curso abierto encima), vuelve a su raíz. Antes se
+ * restauraba el estado guardado de esa pestaña, que incluía el curso, y el toque o el deep link parecían no hacer nada
+ * (encontrado en el teléfono, Fase 4.11).
+ */
+fun NavHostController.navigateToTab(route: Any) {
+    if (popBackStack(route, inclusive = false)) return
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
 }

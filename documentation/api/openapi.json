@@ -348,6 +348,26 @@
         ]
       }
     },
+    "/api/v1/me/logout": {
+      "post": {
+        "operationId": "SessionController_logout_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cierra la sesión de Keycloak del token y las sesiones de Moodle de la persona",
+        "tags": [
+          "mi-iinicia"
+        ]
+      }
+    },
     "/api/v1/admin/users/{id}/enrolments": {
       "get": {
         "operationId": "EnrollmentsController_list_v1",
@@ -1289,6 +1309,14 @@
           },
           {
             "name": "cmid",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bind",
             "required": false,
             "in": "query",
             "schema": {

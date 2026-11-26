@@ -25,6 +25,50 @@ export class SynchronizationRepository {
     );
   }
 
+  /** Personas con cierre de sesión de Moodle pendiente (Moodle no respondió al salir), con la hora del cierre. */
+  pendingMoodleLogouts() {
+    return this.db.query<{ id: string; moodle_user_id: string; before: number }>(
+      `SELECT id, moodle_user_id, floor(extract(epoch FROM moodle_logout_pending_at))::int AS before FROM users
+        WHERE moodle_logout_pending_at IS NOT NULL AND moodle_user_id IS NOT NULL
+        ORDER BY moodle_logout_pending_at LIMIT 25`,
+    );
+  }
+
+  /**
+   * Marca o borra el cierre pendiente. Con varios cierres sin confirmar se conserva la hora más reciente, para que el
+   * reintento cierre todas las sesiones de Moodle abiertas hasta el último cierre (y ninguna posterior).
+   */
+  setMoodleLogoutPending(userId: string, pending: boolean, at?: Date) {
+    return pending
+      ? this.db.query(`UPDATE users SET moodle_logout_pending_at = GREATEST(moodle_logout_pending_at, $2) WHERE id = $1`, [userId, at ?? new Date()])
+      : this.db.query(`UPDATE users SET moodle_logout_pending_at = NULL WHERE id = $1`, [userId]);
+  }
+
+  /** Fase 4.11: registra la sesión de Keycloak cerrada (confirmada o no). Repetir el cierre no la duplica. */
+  revokeSession(sid: string, userId: string, confirmed: boolean) {
+    return this.db.query(
+      `INSERT INTO session_revocations (sid, user_id, keycloak_confirmed_at) VALUES ($1, $2, CASE WHEN $3 THEN now() END)
+       ON CONFLICT (sid) DO UPDATE SET keycloak_confirmed_at = COALESCE(session_revocations.keycloak_confirmed_at, EXCLUDED.keycloak_confirmed_at)`,
+      [sid, userId, confirmed],
+    );
+  }
+
+  /** Sesiones de Keycloak cuyo cierre no se confirmó (Keycloak no respondía). */
+  pendingKeycloakLogouts() {
+    return this.db.query<{ sid: string; user_id: string }>(
+      `SELECT sid, user_id FROM session_revocations WHERE keycloak_confirmed_at IS NULL ORDER BY requested_at LIMIT 25`,
+    );
+  }
+
+  confirmKeycloakLogout(sid: string) {
+    return this.db.query(`UPDATE session_revocations SET keycloak_confirmed_at = now() WHERE sid = $1`, [sid]);
+  }
+
+  /** Pasados 31 días (más que la inactividad máxima de una sesión offline), una sesión cerrada ya no puede volver. */
+  pruneSessionRevocations() {
+    return this.db.query(`DELETE FROM session_revocations WHERE keycloak_confirmed_at IS NOT NULL AND requested_at < now() - interval '31 days'`);
+  }
+
   snapshot(userId: string) {
     return this.db.one<SyncRow>(
       `SELECT id, oidc_sub, email, first_name, last_name, status, moodle_user_id FROM users WHERE id = $1`, [userId],

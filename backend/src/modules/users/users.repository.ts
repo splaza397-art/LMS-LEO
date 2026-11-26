@@ -71,6 +71,11 @@ export class UsersRepository {
     );
   }
 
+  /** Fase 4.11: sesión de Keycloak cerrada desde IINICIA (tabla session_revocations). */
+  async isSessionRevoked(sid: string): Promise<boolean> {
+    return !!(await this.db.one(`SELECT 1 FROM session_revocations WHERE sid = $1`, [sid]));
+  }
+
   async moodleUserId(userId: string): Promise<string | null> {
     const row = await this.db.one<{ moodle_user_id: string | null }>(`SELECT moodle_user_id FROM users WHERE id = $1`, [userId]);
     return row?.moodle_user_id ?? null;

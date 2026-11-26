@@ -19,6 +19,11 @@ COPY --chown=root:www-data --chmod=750 moodle-custom/local/iinicia /var/www/html
 COPY --chown=root:www-data --chmod=750 moodle-custom/theme/iinicia /var/www/html/public/theme/iinicia
 COPY --chown=root:www-data --chmod=640 infrastructure/moodle/config.php /var/www/html/config.php
 COPY infrastructure/moodle/apache-moodle.conf /etc/apache2/conf-enabled/zz-moodle.conf
+# Fase 4.11: el sitio predeterminado registra sso.php con el formato sin consulta (definido en zz-moodle.conf).
+RUN sed -i -e 's#CustomLog ${APACHE_LOG_DIR}/access.log combined$#CustomLog ${APACHE_LOG_DIR}/access.log combined env=!iinicia_sso#' \
+        -e '/env=!iinicia_sso/a CustomLog ${APACHE_LOG_DIR}/access.log iinicia_sso env=iinicia_sso' \
+        /etc/apache2/sites-available/000-default.conf \
+    && grep -q 'access.log iinicia_sso env=iinicia_sso' /etc/apache2/sites-available/000-default.conf
 COPY --chmod=755 infrastructure/moodle/entrypoint.sh /usr/local/bin/iinicia-entrypoint.sh
 COPY --chmod=755 infrastructure/moodle/cron.sh /usr/local/bin/iinicia-cron.sh
 RUN sed -i 's/\r$//' /usr/local/bin/iinicia-entrypoint.sh /usr/local/bin/iinicia-cron.sh

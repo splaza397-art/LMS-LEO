@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import org.iinicia.app.core.common.Freshness
 import org.iinicia.app.core.common.ScreenState
 import org.iinicia.app.core.common.UiEvent
 import org.iinicia.app.core.common.friendlyMessage
@@ -18,24 +19,35 @@ import org.iinicia.app.core.common.loadFrom
 import org.iinicia.app.core.security.Session
 import org.iinicia.app.core.security.SessionExpiredException
 import org.iinicia.app.data.models.Course
+import org.iinicia.app.data.repositories.CampusFlowException
 import org.iinicia.app.data.repositories.CourseRepository
 
 class CourseDetailViewModel(
     private val courseId: Int,
     private val courses: CourseRepository,
     private val session: Session,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ScreenState<Course>())
     val state: StateFlow<ScreenState<Course>> = _state.asStateFlow()
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
     val events: Flow<UiEvent> = _events.receiveAsFlow()
     private var loading: Job? = null
+    private val freshness = Freshness(clock = clock)
 
     init { refresh() }
 
     fun refresh() {
         loading?.cancel()
-        loading = viewModelScope.launch { _state.loadFrom(session) { courses.course(courseId) } }
+        loading = viewModelScope.launch {
+            _state.loadFrom(session) { courses.course(courseId) }
+            if (_state.value.error == null && _state.value.data != null) freshness.markLoaded()
+        }
+    }
+
+    /** La pantalla vuelve a estar activa: se actualiza solo si sus datos tienen más de 60 s. */
+    fun onResume() {
+        if (freshness.isStale()) refresh()
     }
 
     /** Abre el curso (cmid == null) o una de sus actividades en Moodle, con inicio de sesión único. */
@@ -54,6 +66,8 @@ internal suspend fun campusEvent(session: Session, link: suspend () -> String): 
 } catch (_: SessionExpiredException) {
     session.clearSession()
     UiEvent.Message("Tu sesión terminó. Inicia sesión de nuevo.")
+} catch (e: CampusFlowException) {
+    UiEvent.Message(e.message!!)
 } catch (e: Exception) {
     UiEvent.Message(friendlyMessage(e))
 }

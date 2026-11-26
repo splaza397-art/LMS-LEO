@@ -1,8 +1,12 @@
 package org.iinicia.app
 
+import android.net.Uri
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -44,15 +48,17 @@ class AppUiTest {
     private var loginClicks = 0
     private val opened = mutableListOf<String>()
 
+    private val deepLink = MutableStateFlow<Uri?>(null)
+
     private fun start(signedIn: Boolean = true, fontScale: Float = 1f) {
         auth.state.value = signedIn
         val container = AppContainer(auth, api, MemoryStore(), scheduler)
-        val authViewModel = AuthViewModel(auth, scheduler)
+        val authViewModel = AuthViewModel(auth, scheduler, api)
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 IiniciaTheme {
-                    AppRoot(container, authViewModel, MutableStateFlow(null), onLogin = { loginClicks++ }, onOpenUrl = { opened += it })
+                    AppRoot(container, authViewModel, deepLink, onLogin = { loginClicks++ }, onOpenUrl = { opened += it })
                 }
             }
         }
@@ -126,6 +132,26 @@ class AppUiTest {
         text("Hola, Ana").assertIsDisplayed()
     }
 
+    /** Fase 4.11: desde un curso abierto, la pestaña Inicio vuelve a Inicio (antes restauraba el curso y no cambiaba). */
+    @Test fun pestanaInicioDesdeUnCursoVuelveAInicio() {
+        start()
+        text("CF-7").performScrollTo().performClick()
+        text("Abrir en el campus").assertIsDisplayed()
+        text("Inicio").performClick()
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Hola, Ana").fetchSemanticsNodes().isNotEmpty() }
+        text("Abrir en el campus").assertDoesNotExist()
+    }
+
+    /** Fase 4.11: un deep link a Avisos llega aunque haya un curso abierto (por deep link) sobre la pestaña Avisos. */
+    @Test fun deepLinkAAvisosConUnCursoAbierto() {
+        start()
+        text("Avisos").performClick()
+        deepLink.value = Uri.parse("iinicia://curso/7")
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Abrir en el campus").fetchSemanticsNodes().isNotEmpty() }
+        deepLink.value = Uri.parse("iinicia://notificaciones")
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Abrir en el campus").fetchSemanticsNodes().isEmpty() }
+    }
+
     @Test fun avisosNuevosYMarcarComoLeido() {
         start()
         text("Avisos").performClick()
@@ -150,6 +176,17 @@ class AppUiTest {
         compose.waitUntil(3_000) { compose.onAllNodesWithText("Iniciar sesión").fetchSemanticsNodes().isNotEmpty() }
         text("Inicio").assertDoesNotExist()
         assertEquals(1, scheduler.cancelled)
+    }
+
+    /** Fase 4.10 (accesibilidad): el interruptor de notificaciones tiene nombre y se activa tocando toda la fila. */
+    @Test fun interruptorDeNotificacionesConNombre() {
+        start()
+        text("Perfil").performClick()
+        val node = compose.onNode(hasText("Notificaciones") and isToggleable())
+        node.assertIsDisplayed()
+        val before = node.fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
+        node.performClick()
+        assertTrue(node.fetchSemanticsNode().config[SemanticsProperties.ToggleableState] != before)
     }
 
     /** A13: tras cerrar sesión, otra cuenta nunca ve los datos de la anterior. */

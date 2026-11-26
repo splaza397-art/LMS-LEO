@@ -9,7 +9,7 @@ Rama: `refactor/android-modular-architecture`, creada desde `main` después de i
 | Compila | `assembleDebug` y `assembleRelease` (sin firmar) | PC de desarrollo |
 | Pruebas automáticas | 56 unitarias (JVM) y 12 de interfaz Compose | JVM y emulador Pixel 7 con Android 17 (API 37) |
 | Probado a mano con servicios reales | Inicio de sesión con Keycloak, cursos, detalle, avisos, perfil, cierre de sesión, *deep link*, Moodle detenido y recuperación, entrada al campus | Emulador, con `adb reverse` contra el backend, Keycloak y Moodle de DEV |
-| Teléfono físico | **Fase 4.9:** instalado y probado en un ZTE con Android 10. Se encontró un defecto crítico de la plataforma (sesión de Moodle de la cuenta anterior); ver la sección Fase 4.9 | Teléfono con `adb reverse` |
+| Teléfono físico | **Fase 4.9:** instalado y probado en un ZTE con Android 10. Se encontró un defecto crítico de la plataforma (sesión de Moodle de la cuenta anterior). **Fase 4.10:** corregido y verificado en el mismo teléfono (documento 15b) | Teléfono con `adb reverse` |
 
 ## 1. Estado inicial
 
@@ -473,17 +473,37 @@ Concuerda con el documento 06: la versión del teléfono anterior a la "sesión 
 
 **Estado:** la integración de la Fase 4 en `main` queda **detenida** hasta tu decisión, según los criterios acordados. No se hizo el diagnóstico de PostgreSQL ni se inició la Fase 5.
 
+## Fase 4.10 · Corrección crítica de sesiones (25/11/2026)
+
+El defecto crítico de la Fase 4.9 se corrigió en la rama `fix/cross-account-session-isolation`, antes de integrar la Fase 4. El detalle completo está en [15b · Corrección crítica de seguridad y sesiones](15b-correccion-critica-sesiones.md). En resumen:
+
+- La entrada al campus usa un comprobante firmado de un solo uso. Moodle comprueba la identidad y nunca reutiliza la sesión de otra cuenta.
+- El cierre de sesión es coordinado desde el backend (Keycloak y Moodle) y no usa el navegador. Un cierre no confirmado queda pendiente y se completa al volver la conexión.
+- La app siempre pide credenciales (`prompt=login`).
+- Se eliminó la segunda contraseña al entrar al campus (R5), sin quitar `offline_access`.
+- A17 y el doble punto de la fecha quedaron corregidos.
+- El interruptor de notificaciones ahora tiene nombre accesible.
+
+**Corrección a la sección anterior:** la reproducción en el portal de la Fase 4.9 usaba `GET /auth/logout`, que no es el cierre real (un `POST` del botón "Salir"). En la Fase 4.10 se repitió con el botón real y el defecto se confirmó (7 de 8 pruebas fallaron antes de la corrección).
+
+## Fase 4.11 · Validación final de seguridad SSO y accesibilidad (25/11/2026)
+
+Detalle en el [documento 15b, sección Fase 4.11](15b-correccion-critica-sesiones.md). Para la app:
+
+- La entrada al campus usa un `state` propio y un comprobante vinculado al navegador del teléfono (`CampusLinks` y `CampusViewModel`); un enlace copiado no sirve en otro dispositivo.
+- Una pestaña, o un deep link a una pestaña, con un curso abierto encima vuelve a su raíz (defecto anterior, de la etapa 4.6).
+- **TalkBack probado de verdad** en el teléfono (5 rondas), sin defectos nuevos.
+- 76 pruebas unitarias y 15 instrumentadas.
+
 ## 21. Riesgos y pendientes
 
-1. **R1 · Teléfono físico:** nada de esta fase se probó en un teléfono. Hay uno conectado y no se usó sin autorización.
+1. **R1 · Teléfono físico:** probado en un ZTE con Android 10 en las Fases 4.9 y 4.10 (documento 15b, sección 12).
 2. **R2 · Android 8 a 12:** la corrección de las notificaciones (A5) no se ejecutó en esas versiones; solo hay una imagen de Android 17.
 3. **R3 · `targetSdk 36` y 12 avisos de versiones:** pendientes, justificados en la sección 13.
 4. **R4 · Rotación estricta del refresh token (A16):** Keycloak no permite reutilizarlo. Si Android mata la app justo durante una renovación (observado al forzar el cierre con `am start -S`), el token nuevo no se guarda y la sesión se cierra en el siguiente arranque. Keycloak registró `Maximum allowed refresh token reuse exceeded`. Ya ocurría antes. Para la Fase 5: valorar `refreshTokenMaxReuse` en el realm o guardar el estado antes de usar el token nuevo.
-5. **R5 · Entrada al campus sin segunda contraseña:** en el emulador, Keycloak pidió la contraseña al abrir Moodle desde la app, también con el APK anterior. En una ocasión, el inicio de sesión de la app entró sin contraseña porque Chrome conservaba la sesión del campus.
-   - **Hipótesis no verificada:** el emulador (2 GB) cierra Chrome con frecuencia y se pierden las cookies de sesión de Keycloak, o la sesión del navegador vence (`ssoSessionIdleTimeout` 30 min) mientras la app sigue con su token `offline_access`.
-   - Según el documento 06, en tu teléfono la versión anterior entraba sin segunda contraseña. Hay que verificarlo en el teléfono (R1) y revisarlo en la Fase 5.
+5. **R5 · Entrada al campus sin segunda contraseña: resuelto en la Fase 4.10.** La causa no era la memoria del emulador: canjear el código con `offline_access` elimina la sesión del navegador en Keycloak. La entrada al campus ahora usa un comprobante firmado y no depende de esa sesión (documento 15b, secciones 7 y 9).
 6. **R6 · Token de identidad en el cierre de sesión (A15):** riesgo bajo. Sin acceso a la API (`aud` distinto). Para la Fase 5.
-7. **R7 · TalkBack:** no se hizo una revisión manual de accesibilidad.
+7. **R7 · TalkBack:** probado de verdad en la Fase 4.11 en el ZTE con Android 10 y TalkBack 17.1 (documento 15b, 4.11.11). Otras versiones siguen sin probar.
 8. **Heredados, para la Fase 6:**
    - 6 vulnerabilidades moderadas en herramientas de desarrollo;
    - optimización del arranque de Moodle;

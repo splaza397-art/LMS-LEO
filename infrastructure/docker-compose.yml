@@ -10,6 +10,10 @@ x-moodle-env: &moodle-env
   MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
   MOODLE_WS_TOKEN: ${MOODLE_WS_TOKEN}
   MOODLE_OIDC_CLIENT_SECRET: ${KC_MOODLE_CLIENT_SECRET}
+  # Firma de los comprobantes de entrada al campus (backend -> Moodle). Fase 4.10.
+  MOODLE_SSO_SECRET: ${MOODLE_SSO_SECRET}
+  # Portal al que vuelve el paso de vinculación de la entrada al campus (sso.php?start). Fase 4.11.
+  PORTAL_PUBLIC_URL: ${PORTAL_PUBLIC_URL}
   KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL}
   KEYCLOAK_INTERNAL_URL: http://keycloak:8080
   MOODLE_ALLOW_PRIVATE_HOSTS: "true"

@@ -73,11 +73,34 @@ class FakeAuthenticator(signedIn: Boolean = true, var user: String = "persona-a"
         state.value = true
     }
 
-    /** Sin intent de Keycloak (no hay navegador en las pruebas): solo cierra la sesión local. */
-    override suspend fun logoutIntent(): Intent? {
+    /** Refresh token pendiente (como el que guarda AuthManager si el servidor no confirmó el cierre). */
+    var pending: String? = null
+    var retryCalls = 0
+    /** Respuesta de Keycloak al renovar con el token pendiente: null = sin red, "gone" = la sesión ya no existe. */
+    var pendingRefresh: String? = "token-de-acceso-pendiente"
+
+    override suspend fun logout(remoteLogout: suspend () -> Boolean): Boolean {
         logoutCalls++
+        val confirmed = state.value && runCatching { remoteLogout() }.getOrDefault(false)
         state.value = false
-        return null
+        if (!confirmed) pending = "refresh-pendiente"
+        return confirmed
+    }
+
+    override val logoutPending: Boolean get() = pending != null
+
+    override suspend fun retryPendingLogout(remoteLogout: suspend (accessToken: String) -> Boolean): Boolean {
+        retryCalls++
+        if (pending == null) return true
+        return when (val access = pendingRefresh) {
+            null -> false
+            "gone" -> { pending = null; true }
+            else -> {
+                val ok = runCatching { remoteLogout(access) }.getOrDefault(false)
+                if (ok) pending = null
+                ok
+            }
+        }
     }
 }
 
@@ -90,6 +113,9 @@ class FakeApi : IiniciaApi {
     var onUpcoming: suspend () -> List<Activity> = { listOf(Sample.activity()) }
     var onNotifications: suspend () -> List<Notice> = { listOf(Sample.notice("n1"), Sample.notice("n2", read = true)) }
     var onMarkRead: suspend (String) -> Unit = {}
+    /** Cierre en el servidor: true = Keycloak y Moodle confirmaron. Guarda el token explícito usado. */
+    var onLogout: suspend (String?) -> Boolean = { true }
+    val logoutBearers = mutableListOf<String?>()
     var onCampusLink: suspend (Int?, Int?) -> String = { courseId, cmid -> "https://campus.ejemplo.test/sso?course=$courseId&cmid=$cmid" }
 
     fun count(call: String) = calls.count { it == call }
@@ -100,7 +126,11 @@ class FakeApi : IiniciaApi {
     override suspend fun upcoming(): List<Activity> { calls.add("upcoming"); return onUpcoming() }
     override suspend fun notifications(): List<Notice> { calls.add("notifications"); return onNotifications() }
     override suspend fun markRead(id: String) { calls.add("markRead/$id"); onMarkRead(id) }
-    override suspend fun campusLink(courseId: Int?, cmid: Int?): String { calls.add("campusLink/$courseId/$cmid"); return onCampusLink(courseId, cmid) }
+    override suspend fun logout(bearer: String?): Boolean { calls.add("logout"); logoutBearers.add(bearer); return onLogout(bearer) }
+    val campusBinds = mutableListOf<String?>()
+    override suspend fun campusLink(courseId: Int?, cmid: Int?, bind: String?): String {
+        calls.add("campusLink/$courseId/$cmid"); campusBinds.add(bind); return onCampusLink(courseId, cmid)
+    }
 }
 
 class FakeScheduler : NoticeScheduler {

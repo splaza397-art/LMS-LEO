@@ -27,6 +27,15 @@ interface Authenticator : Session {
     fun loginIntent(): Intent
     suspend fun completeLogin(data: Intent)
 
-    /** Revoca y borra la sesión local; devuelve el intent de cierre en Keycloak, si hay token de identidad. */
-    suspend fun logoutIntent(): Intent?
+    /**
+     * Cierre coordinado: remoteLogout pide al backend cerrar Keycloak y Moodle; luego se revoca y se borra la sesión
+     * local. Devuelve true solo si el servidor confirmó todo; si no, queda un cierre pendiente.
+     */
+    suspend fun logout(remoteLogout: suspend () -> Boolean): Boolean
+
+    /** Hay un cierre de sesión anterior sin confirmar en el servidor. */
+    val logoutPending: Boolean
+
+    /** Intenta completar el cierre pendiente. Devuelve true si ya no queda nada pendiente. */
+    suspend fun retryPendingLogout(remoteLogout: suspend (accessToken: String) -> Boolean): Boolean
 }
