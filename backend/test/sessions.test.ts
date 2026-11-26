@@ -113,15 +113,13 @@ describe('Cierre de sesión coordinado', () => {
     assert.ok(Math.abs(moodleCalls[0].before - now) <= 1);
   });
 
-  it('cierre pendiente de la app: se usa su hora, nunca una futura ni de hace más de 30 días', async () => {
-    const now = Math.floor(Date.now() / 1000);
+  it('el corte es siempre la hora del servidor: una hora del cliente (reloj atrasado) se ignora', async () => {
+    // Defecto encontrado en el teléfono (Fase 4.11): con el reloj del teléfono 77 s atrasado, un corte enviado por la
+    // app dejaba viva la sesión de Moodle abierta justo antes de salir.
     const { s, moodleCalls } = service({});
-    await s.logout(user, now - 600);
-    await s.logout(user, now + 3600);
-    await s.logout(user, 0);
-    assert.equal(moodleCalls[0].before, now - 600);
-    assert.ok(moodleCalls[1].before <= now + 1, 'no se acepta una hora futura');
-    assert.ok(moodleCalls[2].before >= now - 30 * 24 * 3600 - 1, 'no se acepta una hora demasiado antigua');
+    const now = Math.floor(Date.now() / 1000);
+    await (s.logout as (u: AuthUser, at?: number) => Promise<unknown>)(user, now - 77);
+    assert.ok(moodleCalls[0].before >= now, 'el corte no puede ser anterior a la hora del servidor');
   });
 
   it('Moodle no responde: queda pendiente y no se informa un cierre completo', async () => {

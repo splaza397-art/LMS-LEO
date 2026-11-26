@@ -1,7 +1,6 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../auth/auth.decorators';
-import { LogoutDto } from './session.dto';
 import { SessionService } from './session.service';
 
 @ApiTags('mi-iinicia')
@@ -18,7 +17,7 @@ export class SessionController {
   @Post('logout')
   @HttpCode(200)
   @ApiOperation({ summary: 'Cierra la sesión de Keycloak del token y las sesiones de Moodle de la persona' })
-  logout(@CurrentUser() user: AuthUser, @Body() body: LogoutDto) {
-    return this.sessions.logout(user, body?.requestedAt);
+  logout(@CurrentUser() user: AuthUser) {
+    return this.sessions.logout(user);
   }
 }

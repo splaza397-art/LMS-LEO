@@ -14,9 +14,6 @@ export interface LogoutResult {
   complete: boolean;
 }
 
-/** Un cierre pendiente de la app puede llegar tarde, pero no de antes de lo que dura una sesión offline. */
-const MAX_REQUEST_AGE_SECONDS = 30 * 24 * 3600;
-
 /**
  * Cierre de sesión coordinado (Fases 4.10 y 4.11), sin depender de que el navegador complete una redirección:
  * - Keycloak: cierra la sesión del token (sid), en línea u offline. La sesión queda registrada como cerrada: el
@@ -38,12 +35,13 @@ export class SessionService {
   ) {}
 
   /**
-   * @param requestedAt hora (segundos Unix) en que la persona cerró sesión, si fue antes de esta llamada (cierre
-   * pendiente de la app). Solo puede adelantar el corte, nunca pasar de ahora.
+   * El corte de Moodle es siempre la hora del servidor al recibir el cierre. No se acepta una hora del cliente: en el
+   * teléfono de prueba el reloj iba 77 s atrasado, y un corte anterior al real dejaba viva la sesión de Moodle abierta
+   * justo antes de salir (Fase 4.11). Un cierre pendiente de la app cierra todo lo abierto hasta que el servidor lo
+   * recibe; una sesión nueva de Keycloak nunca se toca, porque el cierre va por sid.
    */
-  async logout(user: AuthUser, requestedAt?: number): Promise<LogoutResult> {
-    const now = Math.floor(Date.now() / 1000);
-    const at = new Date(1000 * (requestedAt === undefined ? now : Math.min(now, Math.max(requestedAt, now - MAX_REQUEST_AGE_SECONDS))));
+  async logout(user: AuthUser): Promise<LogoutResult> {
+    const at = new Date();
     const [keycloak, moodle] = await Promise.all([this.endKeycloak(user), this.endMoodle(user.id, at)]);
     const result = { keycloak, moodle, complete: keycloak === 'ok' && (moodle === 'ok' || moodle === 'sin_sesion') };
     await this.audit.log({ actorId: user.id, action: 'auth.logout', targetType: 'user', targetId: user.id, detail: { keycloak, moodle } });

@@ -25,10 +25,9 @@ const ALLOWED_NEW_QUERY = new Set(['page', 'pageSize', 'sort', 'order', 'q', 'st
  * Rutas agregadas después de la referencia, cada una con su contrato completo. Agregar una ruta exige declararla
  * aquí; las rutas de la referencia siguen sin poder cambiar.
  * - Fase 4.10: POST /api/v1/me/logout, cierre de sesión coordinado (Keycloak y Moodle) de la persona del token.
- * - Fase 4.11: su cuerpo opcional LogoutDto (requestedAt: hora de un cierre pendiente de la app).
  */
 const APPROVED_NEW_ROUTES = {
-  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: 'LogoutDto', params: [], query: [] },
+  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: null, params: [], query: [] },
 };
 
 /**
