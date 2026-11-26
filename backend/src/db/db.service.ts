@@ -16,6 +16,14 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   private readonly lockPool = new Pool({ connectionString: config.databaseUrl, max: 5 });
 
+  constructor() {
+    // Si PostgreSQL cierra una conexión inactiva (reinicio, recuperación), pg emite "error" en el pool. Sin este
+    // manejador, Node termina el proceso del backend completo. La conexión dañada se descarta y el pool abre otra.
+    for (const pool of [this.pool, this.lockPool]) {
+      pool.on('error', (error) => this.logger.error(`Conexión inactiva a PostgreSQL cerrada: ${error.message}`));
+    }
+  }
+
   async onModuleInit() {
     await this.migrate();
   }

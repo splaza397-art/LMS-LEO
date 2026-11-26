@@ -18,8 +18,11 @@ Plataforma que sustituye el portal WordPress de IINICIA (Instituto de Innovació
 | [12 · Plan de desarrollo](12-plan-de-desarrollo.md) | Equipo técnico, dirección | Fases 2 a 8, diseño de los 12 módulos del backend y requisitos de calificaciones (Fase 5.5) |
 | [13 · Refactorización del backend](13-refactorizacion-backend.md) | Equipo técnico | Fase 2: 12 módulos, endpoints antes y después, paginación, seguridad, pruebas y recuperación |
 | [14 · Refactorización del frontend](14-refactorizacion-frontend.md) | Equipo técnico | Fase 3: grupos de rutas, funcionalidades, componentes compartidos, paneles por rol, paginación, accesibilidad, rendimiento, pruebas y recuperación |
+| [15 · Refactorización de Android](15-refactorizacion-android.md) | Equipo técnico, móvil | Fase 4: MVVM por funcionalidades, navegación, errores, caché con dueño, seguridad, lint, pruebas unitarias e instrumentadas, prueba en teléfono y recuperación |
+| [15b · Corrección crítica de sesiones](15b-correccion-critica-sesiones.md) | Equipo técnico, seguridad, móvil | Fase 4.10: aislamiento de sesiones entre cuentas, comprobante firmado del campus, cierre coordinado, `offline_access`, pruebas, teléfono físico, PostgreSQL y recuperación |
+| [API: inventario de Android](api/inventario-android.md) | Equipo técnico, móvil | Auditoría de la app al inicio de la Fase 4: archivos, funcionalidades, hallazgos y los 35 avisos de lint |
 | [API: inventario del frontend](api/inventario-frontend.md) | Equipo técnico | Rutas, componentes y llamadas al backend al inicio de la Fase 3 |
-| [API: inventario de endpoints](api/inventario-endpoints.md) | Equipo técnico, integradores | Los 52 endpoints con permiso, código, límite y parámetros (generado desde el código) |
+| [API: inventario de endpoints](api/inventario-endpoints.md) | Equipo técnico, integradores | Los 53 endpoints con permiso, código, límite y parámetros (generado desde el código) |
 
 Material complementario:
 

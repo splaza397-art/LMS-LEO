@@ -10,57 +10,62 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.iinicia.app.notifications.NoticeWorker
-import org.iinicia.app.ui.AppRoot
+import org.iinicia.app.features.auth.AuthViewModel
+import org.iinicia.app.features.notifications.canPostNotifications
+import org.iinicia.app.navigation.AppRoot
 import org.iinicia.app.ui.theme.IiniciaTheme
 
+/** Solo inicializa y presenta la app: lanza los intents de AppAuth y Custom Tabs, y recibe los deep links. */
 class MainActivity : ComponentActivity() {
-    private val deepLink = MutableStateFlow<Uri?>(null)
-    private val loginError = MutableStateFlow<String?>(null)
-    private val app get() = application as IiniciaApp
-
-    private val loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val data = result.data ?: return@registerForActivityResult
-        lifecycleScope.launch {
-            runCatching { app.auth.completeLogin(data) }
-                .onSuccess {
-                    loginError.value = null
-                    NoticeWorker.schedule(this@MainActivity)
-                }
-                .onFailure { loginError.value = "No se pudo iniciar sesión. Intenta de nuevo." }
-        }
+    private val container get() = (application as IiniciaApp).container
+    private val auth: AuthViewModel by viewModels {
+        viewModelFactory { initializer { AuthViewModel(container.auth, container.scheduler, container.api) } }
     }
-    private val logoutLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+    private val deepLink = MutableStateFlow<Uri?>(null)
+
+    private val loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { auth.onLoginResult(it.data) }
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) NoticeWorker.checkNow(this)
+        if (granted) container.scheduler.checkNow()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
         deepLink.value = intent?.data
-        if (app.auth.signedIn.value) NoticeWorker.schedule(this)
-        if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (container.auth.signedIn.value) container.scheduler.schedule()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { auth.askNotifications.collect { requestNotificationPermission() } }
+            }
+        }
         setContent {
             IiniciaTheme {
                 AppRoot(
-                    app = app,
+                    container = container,
+                    auth = auth,
                     deepLink = deepLink,
-                    loginError = loginError,
-                    onLogin = { loginLauncher.launch(app.auth.loginIntent()) },
-                    onLogout = {
-                        lifecycleScope.launch {
-                            NoticeWorker.cancel(this@MainActivity)
-                            app.auth.logoutIntent()?.let(logoutLauncher::launch)
-                        }
-                    },
-                    onOpenCampus = { url -> CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(url)) },
+                    onLogin = { loginLauncher.launch(auth.loginIntent()) },
+                    onOpenUrl = { url -> CustomTabsIntent.Builder().build().launchUrl(this, url.toUri()) },
+                    onEnableNotifications = ::requestNotificationPermission,
                 )
             }
+        }
+    }
+
+    /** Android 13+: pide el permiso solo si falta. En versiones anteriores no existe y no hay nada que pedir. */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !canPostNotifications(this)) {
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

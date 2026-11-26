@@ -6,6 +6,7 @@ Lo más importante:
 
 - Trabaja en la rama de la fase. No integres a `main` ni subas a remotos sin autorización.
 - No cambies las rutas de `/api/v1`. Después de tocar el backend, ejecuta `npm run test:contracts`.
+- En Android, la interfaz no hace solicitudes ni toca tokens; la caché y la memoria llevan dueño (otra cuenta no ve datos de la anterior). No instales nada en un teléfono físico sin autorización.
 - En el portal, no cambies URL públicas. El código va por funcionalidad en `frontend/src/features`, y las llamadas del navegador pasan por `lib/api/client.ts`, sin reintentos.
 - No reduzcas controles de seguridad para que una prueba pase, y no inventes resultados de pruebas.
 - No modifiques Moodle Core ni leas su base de datos desde el backend.

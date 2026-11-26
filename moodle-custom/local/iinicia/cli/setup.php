@@ -48,6 +48,10 @@ $values = [
     'basicauth' => 0,
     'loginscopes' => 'openid profile email',
     'loginscopesoffline' => 'openid profile email',
+    // Fase 4.10: entrar a Moodle directamente (marcador, historial) siempre pide credenciales en Keycloak. La entrada
+    // normal desde IINICIA usa comprobantes firmados; así, una sesión de Keycloak que haya quedado en el navegador
+    // (por ejemplo, si Keycloak no respondía al cerrar sesión) no abre Moodle con la cuenta anterior.
+    'loginparams' => 'prompt=login',
     'requireconfirmation' => 1,
     'loginpagename' => 'tu cuenta IINICIA',
 ];
@@ -92,6 +96,20 @@ foreach (['sub' => 'username', 'email' => 'email', 'given_name' => 'firstname', 
     }
 }
 set_config('issuerid', $issuer->get('id'), 'local_iinicia');
+
+// Secreto compartido con el backend para firmar los comprobantes de entrada al campus (Fase 4.10).
+$ssosecret = (string) getenv('MOODLE_SSO_SECRET');
+if (strlen($ssosecret) < 32) {
+    cli_error('[iinicia] Falta MOODLE_SSO_SECRET (al menos 32 caracteres).');
+}
+set_config('ssosecret', $ssosecret, 'local_iinicia');
+
+// Portal al que el paso "start" de sso.php manda el navegador (Fase 4.11). Es un destino fijo: nunca sale de la URL.
+$portalurl = rtrim((string) getenv('PORTAL_PUBLIC_URL'), '/');
+if (!preg_match('#^https?://[^/\s]+$#', $portalurl)) {
+    cli_error('[iinicia] Falta PORTAL_PUBLIC_URL (por ejemplo, https://portal.ejemplo).');
+}
+set_config('portalurl', $portalurl, 'local_iinicia');
 
 // 3. Cuenta y rol de servicio con solo las capacidades necesarias.
 $system = context_system::instance();

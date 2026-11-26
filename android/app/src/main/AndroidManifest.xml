@@ -24,8 +24,7 @@
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="IINICIA"
-        android:networkSecurityConfig="${networkConfig}"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Iinicia"
         tools:targetApi="36">
@@ -43,8 +42,12 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="iinicia" android:host="curso" />
-                <data android:scheme="iinicia" android:host="notificaciones" />
+                <!-- Un atributo por <data>: el filtro acepta iinicia://curso/..., iinicia://notificaciones e
+                     iinicia://campus (vuelta del paso de vinculación de Moodle; la app solo la acepta con su state). -->
+                <data android:scheme="iinicia" />
+                <data android:host="curso" />
+                <data android:host="notificaciones" />
+                <data android:host="campus" />
             </intent-filter>
         </activity>
     </application>

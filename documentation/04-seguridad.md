@@ -38,6 +38,7 @@ La única fuente es `backend/src/auth/permissions.ts`. El backend valida cada pe
 |---|---|
 | Secretos | Solo en variables de entorno del servidor. El navegador recibe cookies `httpOnly`, `SameSite=Lax` y cifradas, y la app no recibe tokens de Moodle |
 | CSRF | El BFF y los formularios públicos rechazan peticiones de otro origen (`Origin`), y el cierre de sesión solo acepta POST |
+| Aislamiento de sesiones entre cuentas (Fases 4.10 y 4.11) | El campus se abre con un comprobante firmado de un solo uso, ligado a la identidad y al navegador que inició la entrada (no es transferible), y revocado al cerrar sesión; Moodle nunca reutiliza la sesión de otra persona. El cierre se coordina desde el backend (Keycloak y Moodle) y no se declara completo sin confirmación; la app y el acceso directo a Moodle siempre piden credenciales ([15b](15b-correccion-critica-sesiones.md)) |
 | XSS | El contenido del CMS se convierte a elementos React y nunca se inyecta HTML. Hay CSP con `frame-ancestors 'none'` y `object-src 'none'` |
 | Inyección SQL | Todas las consultas están parametrizadas |
 | Validación | DTOs con lista blanca (`forbidNonWhitelisted`) |

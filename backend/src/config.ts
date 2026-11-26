@@ -7,6 +7,12 @@ function required(name: string): string {
   return value;
 }
 
+function requiredSecret(name: string, minLength: number): string {
+  const value = required(name);
+  if (value.length < minLength) throw new Error(`${name} debe tener al menos ${minLength} caracteres`);
+  return value;
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   /** Interfaz de escucha. En DEV solo la máquina local; en contenedores, 0.0.0.0 dentro de una red interna. */
@@ -27,6 +33,8 @@ export const config = {
   moodle: {
     url: required('MOODLE_URL').replace(/\/$/, ''),
     token: required('MOODLE_WS_TOKEN'),
+    /** Firma de los comprobantes de entrada al campus (lo comparte con el plugin local_iinicia). Fase 4.10. */
+    ssoSecret: requiredSecret('MOODLE_SSO_SECRET', 32),
   },
   /** Paginación de listas administrativas: tamaño máximo de página (entre 1 y 500; por omisión 100). */
   pagination: {

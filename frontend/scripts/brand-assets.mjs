@@ -58,9 +58,6 @@ mkdirSync(res('drawable-nodpi'), { recursive: true });
 const foreground = await sharp(symbol).resize({ width: 264, height: 264, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer();
 await sharp({ create: { width: 432, height: 432, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
   .composite([{ input: foreground, gravity: 'center' }]).png().toFile(res('drawable-nodpi/ic_launcher_foreground.png'));
-for (const [density, size] of [['mdpi', 48], ['hdpi', 72], ['xhdpi', 96], ['xxhdpi', 144], ['xxxhdpi', 192]]) {
-  mkdirSync(res(`mipmap-${density}`), { recursive: true });
-  await icon(size, res(`mipmap-${density}/ic_launcher.png`), 0.18);
-}
+// Sin PNG por densidad: con minSdk 26 Android siempre usa el ícono adaptativo (mipmap-anydpi/ic_launcher.xml).
 await sharp(full).resize({ width: 480 }).png().toFile(res('drawable-nodpi/logo_iinicia.png'));
 console.log('Recursos de marca de Android generados');

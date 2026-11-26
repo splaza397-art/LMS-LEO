@@ -1,0 +1,16 @@
+Fase 4.11 - e2e/tests/campus-ticket.spec.ts ANTES de la corrección (código b099123), 25/11/2026
+Resultado: 6 fallaron, 6 pasaron (3.6 min). Fallan las que prueban la transferencia del enlace (2, 3, 4),
+el destinatario (9) y la revocación al cerrar sesión (10, 11).
+
+PASA   1. el comprobante abre el campus en el navegador de quien lo pidió
+FALLA  2. copiado a otro navegador no abre la sesión de su dueño          (Expected: not "Demo Estudiante")
+FALLA  3. copiado a otro dispositivo no abre la sesión de su dueño        (Expected: not "Demo Estudiante")
+FALLA  4. usado desde una cuenta diferente no la cambia por la del dueño  (Expected: not "Demo Estudiante")
+PASA   5. un comprobante vencido no abre sesión
+PASA   6. un comprobante usado no sirve una segunda vez
+PASA   7. dos canjes simultáneos del mismo comprobante: solo uno entra
+PASA   8. un comprobante manipulado no abre sesión
+FALLA  9. un comprobante para otro destinatario no abre sesión            (Expected: "sin sesión", Received: "Demo Estudiante")
+FALLA 10. un comprobante emitido antes de cerrar sesión no sirve después  (Expected: not "Demo Estudiante")
+FALLA 11. cambio de cuenta antes de canjear: el comprobante anterior no sirve (Expected: not "Demo Estudiante")
+PASA  14. no redirige a destinos fuera del campus

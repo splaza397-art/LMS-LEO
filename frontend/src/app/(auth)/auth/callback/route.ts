@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIES, cookieOptions, REFRESH_MAX_AGE, requestTokens, sealTokens, unseal } from "@/lib/session-core";
+import { REAUTH_COOKIE } from "@/lib/logout-policy";
 
 const jwks = createRemoteJWKSet(new URL(`${process.env.OIDC_ISSUER}/protocol/openid-connect/certs`));
 const portal = (path: string) => new URL(path, process.env.PORTAL_URL);
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   const sealed = await sealTokens(tokens);
   const response = NextResponse.redirect(portal(tx.returnTo));
   response.cookies.delete(COOKIES.tx);
+  response.cookies.delete(REAUTH_COOKIE);
   response.cookies.set(COOKIES.access, sealed.access, { ...cookieOptions, maxAge: sealed.accessMaxAge });
   response.cookies.set(COOKIES.refresh, sealed.refresh, { ...cookieOptions, maxAge: REFRESH_MAX_AGE });
   if (sealed.id) response.cookies.set(COOKIES.id, sealed.id, { ...cookieOptions, maxAge: REFRESH_MAX_AGE });
