@@ -691,9 +691,37 @@ Ejecutados sobre el código final de la rama:
 | `cdb7b13` | E2E: pruebas de aislamiento con el flujo vinculado; fallas de servicios 22 de 22 |
 | `842fc82` | Android: pestaña o deep link a una pestaña ya abierta vuelve a su raíz |
 | `c533ca7` | Moodle: el registro de accesos omite la consulta de `sso.php` |
-| Commit de documentación | Esta sección, documentos 04, 05, 12 y 15, inventario de la API y evidencias |
+| `2822a75` | Esta sección, documentos 04, 05, 12 y 15, inventario de la API y evidencias |
+| `9d8fbd5` | Integración (`--no-ff`) de `fix/cross-account-session-isolation` en `refactor/android-modular-architecture` |
 
 No se reescribió el historial ni se subió nada a remotos.
+
+### Integración en la rama de Android
+
+Se cumplieron los criterios de la autorización condicionada:
+- nadie entra a Moodle con la identidad de otra persona;
+- el enlace transferido no suplanta a su dueño;
+- el cierre interrumpido es seguro;
+- los comprobantes pendientes se invalidan;
+- las pruebas pasan;
+- el teléfono funciona;
+- TalkBack se probó de verdad;
+- no quedan defectos críticos.
+
+Por eso se integró la rama de corrección en `refactor/android-modular-architecture` con un *merge* `--no-ff` (`9d8fbd5`), sin reescribir el historial. El árbol resultante es idéntico al de la rama de corrección.
+
+**Validación en la rama de Android:**
+
+| Conjunto | Resultado |
+|---|---|
+| Backend | 60 unitarias, 8 de integración, 55 de contratos y `typecheck` correctos |
+| Portal | 9 + 50 pruebas, `typecheck` y ESLint correctos |
+| Android | 76 unitarias, lint con 0 errores y 16 avisos, `assembleDebug` correcto |
+| E2E de seguridad y roles contra los servicios en ejecución | 35 de 35 (comprobante, aislamiento y roles) |
+
+La suite E2E completa (101 de 101) y las instrumentadas (15 de 15) se ejecutaron sobre el mismo árbol.
+
+**La Fase 4 no se integró en `main`, y la Fase 5 no ha comenzado.**
 
 ## 4.11.15 Riesgos residuales
 
