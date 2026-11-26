@@ -3,6 +3,7 @@
 //
 // Fase 4.10: Moodle nunca reutiliza la sesión de otra persona; entra con un comprobante firmado, de un solo uso, que
 // lleva la identidad (usuario Moodle, UUID institucional y sub de Keycloak).
+// Fase 5: una solicitud inválida no cierra la sesión abierta; la sesión de Moodle queda asociada al sid de Keycloak.
 // Fase 4.11: el comprobante ya no sirve "al portador". La entrada tiene dos pasos, como el parámetro state de OAuth:
 // 1. start: este Moodle pone en el navegador una cookie de vinculación aleatoria y lo manda al portal o a la app
 //    (destinos fijos de la configuración, nunca tomados de la URL) con ese valor.
@@ -22,10 +23,15 @@ $PAGE->set_url(new moodle_url('/local/iinicia/sso.php'));
 @header('Pragma: no-cache');
 @header('Referrer-Policy: no-referrer');
 
-/** Muestra un error sin revelar detalles y sin dejar ninguna sesión abierta. */
-$fail = function (string $key) {
+/**
+ * Muestra un error sin revelar detalles. Fase 5: una solicitud inválida (manipulada, vencida, usada, de otro navegador
+ * o revocada) ya no cierra la sesión que el navegador tenga abierta: todo se valida antes de tocar la sesión, y una
+ * solicitud rechazada no cambia de quién es. Solo se cierra la sesión si la comprobación final de identidad falla
+ * después de haberla cambiado ($forcelogout), porque entonces el estado de la sesión ya no es confiable.
+ */
+$fail = function (string $key, bool $forcelogout = false) {
     sso_ticket::clear_bind_cookie();
-    if (isloggedin()) {
+    if ($forcelogout && isloggedin()) {
         require_logout();
     }
     throw new moodle_exception($key, 'local_iinicia', new moodle_url('/'));
@@ -102,7 +108,9 @@ if (!isloggedin() || isguestuser() || (int) $USER->id !== (int) $ticket->user->i
 
 // Comprobación final: la sesión resultante es exactamente la del comprobante.
 if ((int) $USER->id !== (int) $ticket->user->id) {
-    $fail('ssoidentity');
+    $fail('ssoidentity', true);
 }
+// Fase 5: esta sesión de Moodle queda asociada a la sesión de Keycloak del comprobante (cierre por dispositivo).
+sso_ticket::link_session(session_id(), $ticket->sid, (int) $USER->id);
 // Redirección a una URL limpia: el comprobante no queda en la barra de direcciones ni en el historial de la página.
 redirect(new moodle_url($ticket->want));

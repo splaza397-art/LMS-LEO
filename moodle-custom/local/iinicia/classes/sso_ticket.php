@@ -34,6 +34,8 @@ class sso_ticket {
     public $user;
     /** @var string Ruta local de destino. */
     public $want;
+    /** @var string Sesión de Keycloak (sid) de la que salió el comprobante. */
+    public $sid;
 
     /**
      * Verifica firma, consumo único, emisor, destinatario, propósito, vigencia, destino, vinculación al navegador,
@@ -80,7 +82,7 @@ class sso_ticket {
             throw new \moodle_exception('ssoused', 'local_iinicia');
         }
         if (random_int(1, 50) === 1) {
-            $DB->delete_records_select('local_iinicia_sso_ticket', 'timecreated < ?', [$now - DAYSECS]);
+            self::cleanup($now);
         }
 
         if ($data->iss !== self::ISSUER || $data->aud !== $CFG->wwwroot || $data->purpose !== self::PURPOSE) {
@@ -102,6 +104,10 @@ class sso_ticket {
         if ($revoked && $data->iat <= $revoked) {
             throw new \moodle_exception('ssorevoked', 'local_iinicia');
         }
+        // Fase 5: cierre de un solo dispositivo. Los comprobantes de esa sesión de Keycloak ya no sirven.
+        if ($DB->record_exists('local_iinicia_sid_revoked', ['kcsid' => $data->sid])) {
+            throw new \moodle_exception('ssorevoked', 'local_iinicia');
+        }
 
         // Las tres identidades deben corresponder: usuario Moodle, UUID institucional (idnumber) y sub de Keycloak.
         $user = $DB->get_record('user', [
@@ -117,7 +123,42 @@ class sso_ticket {
         $ticket = new self();
         $ticket->user = $user;
         $ticket->want = $data->want;
+        $ticket->sid = $data->sid;
         return $ticket;
+    }
+
+    /**
+     * Fase 5: asocia la sesión de Moodle de este navegador con la sesión de Keycloak del comprobante, para que el cierre
+     * de ese dispositivo cierre solo esta sesión (y no las de otros dispositivos ni una sesión posterior).
+     */
+    public static function link_session(string $moodlesid, string $kcsid, int $userid): void {
+        global $DB;
+        $DB->delete_records('local_iinicia_session_link', ['sid' => $moodlesid]);
+        $DB->insert_record('local_iinicia_session_link', (object) [
+            'sid' => $moodlesid, 'kcsid' => $kcsid, 'userid' => $userid, 'timecreated' => time(),
+        ]);
+    }
+
+    /** Fase 5: los comprobantes de esta sesión de Keycloak (cerrada en un dispositivo) dejan de servir. */
+    public static function revoke_kc_session(string $kcsid, int $userid): void {
+        global $DB;
+        if (!$DB->record_exists('local_iinicia_sid_revoked', ['kcsid' => $kcsid])) {
+            try {
+                $DB->insert_record('local_iinicia_sid_revoked', (object) ['kcsid' => $kcsid, 'userid' => $userid, 'timecreated' => time()]);
+            } catch (\dml_write_exception $e) {
+                // Otro cierre simultáneo ya la registró.
+            }
+        }
+    }
+
+    /** Limpieza ocasional de registros vencidos: comprobantes usados, vínculos de sesiones ya cerradas, sid revocados. */
+    public static function cleanup(int $now): void {
+        global $DB;
+        $DB->delete_records_select('local_iinicia_sso_ticket', 'timecreated < ?', [$now - DAYSECS]);
+        // Una sesión de Keycloak cerrada no vuelve: 31 días cubren la inactividad máxima de una sesión offline.
+        $DB->delete_records_select('local_iinicia_sid_revoked', 'timecreated < ?', [$now - 31 * DAYSECS]);
+        $DB->delete_records_select('local_iinicia_session_link',
+            'timecreated < ? AND sid NOT IN (SELECT sid FROM {sessions})', [$now - HOURSECS]);
     }
 
     /** Registra el cierre de sesión: los comprobantes emitidos hasta $time ya no sirven. */

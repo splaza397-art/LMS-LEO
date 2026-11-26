@@ -29,6 +29,14 @@ class provider implements
             'userid' => 'privacy:metadata:revocation:userid',
             'timerevoked' => 'privacy:metadata:revocation:timerevoked',
         ], 'privacy:metadata:revocation');
+        $collection->add_database_table('local_iinicia_session_link', [
+            'userid' => 'privacy:metadata:sessionlink:userid',
+            'timecreated' => 'privacy:metadata:sessionlink:timecreated',
+        ], 'privacy:metadata:sessionlink');
+        $collection->add_database_table('local_iinicia_sid_revoked', [
+            'userid' => 'privacy:metadata:sidrevoked:userid',
+            'timecreated' => 'privacy:metadata:sidrevoked:timecreated',
+        ], 'privacy:metadata:sidrevoked');
         return $collection;
     }
 
@@ -36,8 +44,10 @@ class provider implements
         $list = new contextlist();
         $list->add_from_sql('SELECT ctx.id FROM {context} ctx WHERE ctx.contextlevel = :level AND EXISTS
             (SELECT 1 FROM {local_iinicia_sso_ticket} t WHERE t.userid = :userid
-             UNION SELECT 1 FROM {local_iinicia_revocation} r WHERE r.userid = :userid2)',
-            ['level' => CONTEXT_SYSTEM, 'userid' => $userid, 'userid2' => $userid]);
+             UNION SELECT 1 FROM {local_iinicia_revocation} r WHERE r.userid = :userid2
+             UNION SELECT 1 FROM {local_iinicia_session_link} l WHERE l.userid = :userid3
+             UNION SELECT 1 FROM {local_iinicia_sid_revoked} v WHERE v.userid = :userid4)',
+            ['level' => CONTEXT_SYSTEM, 'userid' => $userid, 'userid2' => $userid, 'userid3' => $userid, 'userid4' => $userid]);
         return $list;
     }
 
@@ -45,6 +55,8 @@ class provider implements
         if ($userlist->get_context()->contextlevel === CONTEXT_SYSTEM) {
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_iinicia_sso_ticket}', []);
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_iinicia_revocation}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_iinicia_session_link}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_iinicia_sid_revoked}', []);
         }
     }
 
@@ -57,6 +69,8 @@ class provider implements
         if ($context->contextlevel === CONTEXT_SYSTEM) {
             $DB->delete_records('local_iinicia_sso_ticket');
             $DB->delete_records('local_iinicia_revocation');
+            $DB->delete_records('local_iinicia_session_link');
+            $DB->delete_records('local_iinicia_sid_revoked');
         }
     }
 
@@ -64,6 +78,8 @@ class provider implements
         global $DB;
         $DB->delete_records('local_iinicia_sso_ticket', ['userid' => $contextlist->get_user()->id]);
         $DB->delete_records('local_iinicia_revocation', ['userid' => $contextlist->get_user()->id]);
+        $DB->delete_records('local_iinicia_session_link', ['userid' => $contextlist->get_user()->id]);
+        $DB->delete_records('local_iinicia_sid_revoked', ['userid' => $contextlist->get_user()->id]);
     }
 
     public static function delete_data_for_users(approved_userlist $userlist) {
@@ -71,6 +87,8 @@ class provider implements
         foreach ($userlist->get_userids() as $userid) {
             $DB->delete_records('local_iinicia_sso_ticket', ['userid' => $userid]);
             $DB->delete_records('local_iinicia_revocation', ['userid' => $userid]);
+            $DB->delete_records('local_iinicia_session_link', ['userid' => $userid]);
+            $DB->delete_records('local_iinicia_sid_revoked', ['userid' => $userid]);
         }
     }
 }
