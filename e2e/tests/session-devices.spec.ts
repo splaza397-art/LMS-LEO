@@ -60,3 +60,62 @@ test("un reintento antiguo de cierre no cierra la sesión nueva de la misma pers
   await old.context().close();
   await fresh.context().close();
 });
+
+test("cerrar sesión en todos los dispositivos cierra el portal y el campus de los demás", async ({ browser }) => {
+  const phone = await session(browser, "estudiante");
+  const laptop = await session(browser, "estudiante");
+  await openCampus(phone);
+  await openCampus(laptop);
+  await laptop.goto("/mi-iinicia");
+  await laptop.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+  await laptop.waitForURL((url) => !url.pathname.startsWith("/mi-iinicia"), { timeout: 30_000 });
+  expect(await moodleIdentity(laptop)).toBe("sin sesión");
+  expect(await moodleIdentity(phone), "el campus del otro dispositivo también se cerró").toBe("sin sesión");
+  expect((await bff(phone, "GET", "me")).status, "el portal del otro dispositivo ya no tiene sesión").toBe(401);
+  await phone.context().close();
+  await laptop.context().close();
+});
+
+test("administración: revocar una sesión comprometida o todas, con permiso y auditoría", async ({ browser }) => {
+  const userId = sql("portal", "select id from users where email = 'estudiante@iinicia.test'");
+  const a = await session(browser, "estudiante");
+  const b = await session(browser, "estudiante");
+  await openCampus(a);
+  await openCampus(b);
+  const admin = await session(browser, "academico", "/admin");
+  const list = await bff(admin, "GET", `admin/users/${userId}/sessions`);
+  expect(list.status).toBe(200);
+  expect(list.body.length).toBeGreaterThanOrEqual(2);
+  expect(Object.keys(list.body[0]).sort(), "sin IP ni datos del navegador").toEqual(["clients", "id", "kind", "lastAccess", "started"]);
+  // Revocar la sesión de A (comprometida): B sigue.
+  const aMoodle = (await a.context().cookies("http://localhost:8081")).find((c) => c.name === "MoodleSession")!.value;
+  const aSid = sql("moodle", `select kcsid from mdl_local_iinicia_session_link where sid = '${aMoodle.replace(/'/g, "")}'`);
+  expect((await bff(admin, "DELETE", `admin/users/${userId}/sessions/${aSid}`)).body.complete).toBe(true);
+  expect((await bff(a, "GET", "me")).status, "la sesión revocada ya no sirve en la API").toBe(401);
+  expect(await moodleIdentity(a)).toBe("sin sesión");
+  expect((await bff(b, "GET", "me")).status, "la otra sesión sigue").toBe(200);
+  expect(await moodleIdentity(b)).toBe("Demo Estudiante");
+  // Revocar todas por seguridad.
+  expect((await bff(admin, "POST", `admin/users/${userId}/sessions/revoke`)).body.complete).toBe(true);
+  expect((await bff(b, "GET", "me")).status).toBe(401);
+  expect(await moodleIdentity(b)).toBe("sin sesión");
+  expect(sql("portal", `select count(*) from audit_log where target_id = '${userId}' and action in ('security.session_revoked','security.sessions_revoked') and created_at > now() - interval '5 minutes'`)).toBe("2");
+  await a.context().close();
+  await b.context().close();
+  await admin.context().close();
+});
+
+test("revocar sesiones: sin permiso responde 403, y el administrador académico no actúa sobre un superadministrador", async ({ browser }) => {
+  const student = sql("portal", "select id from users where email = 'estudiante@iinicia.test'");
+  const superadmin = sql("portal", "select id from users where email = 'superadmin@iinicia.test'");
+  for (const who of ["coordinador", "soporte", "profesor", "estudiante"]) {
+    const page = await session(browser, who);
+    expect((await bff(page, "POST", `admin/users/${student}/sessions/revoke`)).status, who).toBe(403);
+    expect((await bff(page, "GET", `admin/users/${student}/sessions`)).status, who).toBe(403);
+    await page.context().close();
+  }
+  const academico = await session(browser, "academico", "/admin");
+  expect((await bff(academico, "POST", `admin/users/${superadmin}/sessions/revoke`)).status).toBe(403);
+  expect((await bff(academico, "DELETE", `admin/users/${student}/sessions/not-a-uuid`)).status, "sid inválido").toBe(400);
+  await academico.context().close();
+});
