@@ -44,7 +44,7 @@ Total: **53** endpoints. "sesión" = requiere sesión válida, sin permiso adici
 | PATCH | `/api/v1/me` | sesión | 200 |  | UpdateProfileDto |  |
 | GET | `/api/v1/me/applications` | sesión | 200 |  |  |  |
 | POST | `/api/v1/me/applications` | `application:create` | 201 |  | ApplyDto |  |
-| GET | `/api/v1/me/campus-link` | `campus:access` | 200 |  |  | ?cmid ?courseId |
+| GET | `/api/v1/me/campus-link` | `campus:access` | 200 |  |  | ?bind ?cmid ?courseId |
 | GET | `/api/v1/me/courses` | sesión | 200 |  |  |  |
 | GET | `/api/v1/me/courses/:id` | sesión | 200 |  |  | id (ParseIntPipe) |
 | POST | `/api/v1/me/devices` | sesión | 201 |  | DeviceDto |  |

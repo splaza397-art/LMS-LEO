@@ -1,0 +1,16 @@
+Fase 4.11 - e2e/tests/campus-ticket.spec.ts DESPUÉS de la corrección, dentro de la suite E2E completa (25/11/2026)
+Suite completa: 101 de 101 pruebas correctas (23.8 min), incluidas las 12 del comprobante y las 8 de aislamiento.
+
+PASA   1. el comprobante abre el campus en el navegador de quien lo pidió
+PASA   2. copiado a otro navegador no abre la sesión de su dueño
+PASA   3. copiado a otro dispositivo no abre la sesión de su dueño
+PASA   4. usado desde una cuenta diferente no la cambia por la del dueño
+PASA   5. un comprobante vencido no abre sesión
+PASA   6. un comprobante usado no sirve una segunda vez
+PASA   7. dos canjes simultáneos del mismo comprobante: solo uno entra
+PASA   8. un comprobante manipulado no abre sesión
+PASA   9. un comprobante para otro destinatario no abre sesión
+PASA  10. un comprobante emitido antes de cerrar sesión no sirve después
+PASA  11. cambio de cuenta antes de canjear: el comprobante anterior no sirve
+PASA  14. no redirige a destinos fuera del campus
+(12 y 13, Moodle o Keycloak no disponibles: e2e/session-failures.mjs, ver cierre-con-fallas.txt, 22 de 22)

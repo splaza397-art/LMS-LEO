@@ -1314,6 +1314,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "bind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

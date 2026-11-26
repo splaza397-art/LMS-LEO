@@ -486,6 +486,15 @@ El defecto crítico de la Fase 4.9 se corrigió en la rama `fix/cross-account-se
 
 **Corrección a la sección anterior:** la reproducción en el portal de la Fase 4.9 usaba `GET /auth/logout`, que no es el cierre real (un `POST` del botón "Salir"). En la Fase 4.10 se repitió con el botón real y el defecto se confirmó (7 de 8 pruebas fallaron antes de la corrección).
 
+## Fase 4.11 · Validación final de seguridad SSO y accesibilidad (25/11/2026)
+
+Detalle en el [documento 15b, sección Fase 4.11](15b-correccion-critica-sesiones.md). Para la app:
+
+- La entrada al campus usa un `state` propio y un comprobante vinculado al navegador del teléfono (`CampusLinks` y `CampusViewModel`); un enlace copiado no sirve en otro dispositivo.
+- Una pestaña, o un deep link a una pestaña, con un curso abierto encima vuelve a su raíz (defecto anterior, de la etapa 4.6).
+- **TalkBack probado de verdad** en el teléfono (5 rondas), sin defectos nuevos.
+- 76 pruebas unitarias y 15 instrumentadas.
+
 ## 21. Riesgos y pendientes
 
 1. **R1 · Teléfono físico:** probado en un ZTE con Android 10 en las Fases 4.9 y 4.10 (documento 15b, sección 12).
@@ -494,7 +503,7 @@ El defecto crítico de la Fase 4.9 se corrigió en la rama `fix/cross-account-se
 4. **R4 · Rotación estricta del refresh token (A16):** Keycloak no permite reutilizarlo. Si Android mata la app justo durante una renovación (observado al forzar el cierre con `am start -S`), el token nuevo no se guarda y la sesión se cierra en el siguiente arranque. Keycloak registró `Maximum allowed refresh token reuse exceeded`. Ya ocurría antes. Para la Fase 5: valorar `refreshTokenMaxReuse` en el realm o guardar el estado antes de usar el token nuevo.
 5. **R5 · Entrada al campus sin segunda contraseña: resuelto en la Fase 4.10.** La causa no era la memoria del emulador: canjear el código con `offline_access` elimina la sesión del navegador en Keycloak. La entrada al campus ahora usa un comprobante firmado y no depende de esa sesión (documento 15b, secciones 7 y 9).
 6. **R6 · Token de identidad en el cierre de sesión (A15):** riesgo bajo. Sin acceso a la API (`aud` distinto). Para la Fase 5.
-7. **R7 · TalkBack:** sigue pendiente. El teléfono no tiene TalkBack instalado y instalarlo requiere tu autorización. Se revisó el árbol de accesibilidad en el teléfono y se corrigió el interruptor sin nombre (documento 15b, sección 13).
+7. **R7 · TalkBack:** probado de verdad en la Fase 4.11 en el ZTE con Android 10 y TalkBack 17.1 (documento 15b, 4.11.11). Otras versiones siguen sin probar.
 8. **Heredados, para la Fase 6:**
    - 6 vulnerabilidades moderadas en herramientas de desarrollo;
    - optimización del arranque de Moodle;

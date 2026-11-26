@@ -511,6 +511,7 @@
     "body": null,
     "params": [],
     "query": [
+      "bind",
       "cmid",
       "courseId"
     ]
