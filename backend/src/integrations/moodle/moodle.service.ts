@@ -72,8 +72,9 @@ export class MoodleService {
   }
 
   /** Cierra todas las sesiones de Moodle de una persona (Fase 4.10). Devuelve cuántas había. */
-  async logoutUser(userId: number): Promise<number> {
-    return (await this.call<{ closed: number }>('local_iinicia_logout_user', { userid: userId })).closed;
+  /** Cierra las sesiones de Moodle abiertas hasta "before" (segundos Unix) y revoca los comprobantes emitidos hasta entonces. */
+  async logoutUser(userId: number, before: number): Promise<number> {
+    return (await this.call<{ closed: number }>('local_iinicia_logout_user', { userid: userId, before })).closed;
   }
 
   async overview(userId: number): Promise<MoodleCourse[]> {

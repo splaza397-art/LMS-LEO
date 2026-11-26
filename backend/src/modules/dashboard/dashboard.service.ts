@@ -1,11 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { config } from '../../config';
 import { MoodleCourse, MoodleService } from '../../integrations/moodle/moodle.service';
 import type { AuthUser } from '../auth/auth.decorators';
 import { hasPermission } from '../auth/permissions';
 import { EnrollmentsRepository } from '../enrollments/enrollments.repository';
 import { UsersRepository } from '../users/users.repository';
-import { signCampusTicket } from './campus-ticket';
+import { BIND_PATTERN, signCampusTicket } from './campus-ticket';
 
 const summary = ({ sections, ...course }: MoodleCourse) => ({
   ...course,
@@ -48,8 +48,14 @@ export class DashboardService {
       .slice(0, 20);
   }
 
-  /** Enlace SSO al LMS. Valida que la actividad pertenezca a un curso del usuario. */
-  async campusLink(user: AuthUser, courseId?: string, cmid?: string) {
+  /**
+   * Entrada al campus. Valida que el curso o la actividad sean de la persona.
+   * Fase 4.11, en dos pasos:
+   * - sin "bind": devuelve el enlace al paso "start" de Moodle, que pone una cookie de vinculación en el navegador y
+   *   lo devuelve al portal o a la app con ese valor;
+   * - con "bind": devuelve el enlace con el comprobante firmado para esta persona, esta sesión y ese navegador.
+   */
+  async campusLink(user: AuthUser, courseId?: string, cmid?: string, bind?: string) {
     let wantsurl = '/my/courses.php';
     if (cmid || courseId) {
       const courses = await this.myCourses(user);
@@ -62,11 +68,18 @@ export class DashboardService {
         wantsurl = `/course/view.php?id=${Number(courseId)}`;
       }
     }
-    // Fase 4.10: el enlace lleva un comprobante firmado, de 60 s y de un solo uso, con la identidad de esta persona
-    // (usuario Moodle, UUID y sub). Moodle no reutiliza una sesión abierta de otra cuenta.
     const moodleUserId = Number(await this.users.moodleUserId(user.id));
     if (!moodleUserId) throw new ConflictException('Tu cuenta del campus aún se está preparando. Intenta en unos minutos.');
-    const ticket = signCampusTicket({ uid: moodleUserId, uuid: user.id, sub: user.sub, want: wantsurl }, config.moodle.ssoSecret);
+    if (bind === undefined) {
+      const target: Record<string, string> = cmid ? { cmid: String(Number(cmid)) } : courseId ? { courseId: String(Number(courseId)) } : {};
+      return { url: `${config.moodle.url}/local/iinicia/sso.php?${new URLSearchParams({ start: '1', ...target })}` };
+    }
+    if (!BIND_PATTERN.test(bind)) throw new BadRequestException('Vinculación inválida');
+    // Una sesión cerrada (o sin identificador) no obtiene comprobantes, aunque su token de acceso aún no venza.
+    if (!user.sid || await this.users.isSessionRevoked(user.sid)) throw new UnauthorizedException('La sesión se cerró. Inicia sesión de nuevo.');
+    const ticket = signCampusTicket({
+      aud: config.moodle.url, uid: moodleUserId, uuid: user.id, sub: user.sub, sid: user.sid, want: wantsurl, bind,
+    }, config.moodle.ssoSecret);
     return { url: `${config.moodle.url}/local/iinicia/sso.php?ticket=${ticket}` };
   }
 

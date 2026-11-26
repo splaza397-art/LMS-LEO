@@ -22,7 +22,9 @@ const MAX_BACKOFF_MINUTES = 60;
 export class SyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SyncService.name);
   private timer?: NodeJS.Timeout;
+  private logoutTimer?: NodeJS.Timeout;
   private running = false;
+  private retryingLogouts = false;
 
   constructor(
     private readonly db: DbService,
@@ -35,10 +37,27 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.timer = setInterval(() => void this.retryPending(), 60_000);
     this.timer.unref();
+    // Cierres de sesión sin confirmar (Fases 4.10 y 4.11): cada 15 s, para acortar el tiempo en que una sesión de
+    // Moodle o Keycloak que debía cerrarse sigue abierta después de que el servicio vuelve.
+    this.logoutTimer = setInterval(() => void this.retryLogouts(), 15_000);
+    this.logoutTimer.unref();
   }
 
   onModuleDestroy() {
     clearInterval(this.timer);
+    clearInterval(this.logoutTimer);
+  }
+
+  async retryLogouts() {
+    if (this.retryingLogouts) return;
+    this.retryingLogouts = true;
+    try {
+      await this.sessions.retryPendingLogouts();
+    } catch (error) {
+      this.logger.error(`Reintento de cierres de sesión fallido: ${(error as Error).message}`);
+    } finally {
+      this.retryingLogouts = false;
+    }
   }
 
   async retryPending() {
@@ -47,8 +66,6 @@ export class SyncService implements OnModuleInit, OnModuleDestroy {
     try {
       // Sin espera: si otra solicitud o instancia ya sincroniza a esa persona, se omite en esta vuelta.
       for (const row of await this.repo.dueForRetry()) await this.syncUser(row.id, { wait: false });
-      // Cierres de sesión de Moodle que quedaron pendientes porque Moodle no respondía (Fase 4.10).
-      await this.sessions.retryPendingMoodleLogouts();
     } catch (error) {
       this.logger.error(`Reintento fallido: ${(error as Error).message}`);
     } finally {

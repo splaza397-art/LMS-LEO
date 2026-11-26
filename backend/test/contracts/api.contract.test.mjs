@@ -25,10 +25,18 @@ const ALLOWED_NEW_QUERY = new Set(['page', 'pageSize', 'sort', 'order', 'q', 'st
  * Rutas agregadas después de la referencia, cada una con su contrato completo. Agregar una ruta exige declararla
  * aquí; las rutas de la referencia siguen sin poder cambiar.
  * - Fase 4.10: POST /api/v1/me/logout, cierre de sesión coordinado (Keycloak y Moodle) de la persona del token.
+ * - Fase 4.11: su cuerpo opcional LogoutDto (requestedAt: hora de un cierre pendiente de la app).
  */
 const APPROVED_NEW_ROUTES = {
-  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: null, params: [], query: [] },
+  'POST /api/v1/me/logout': { permission: null, public: false, httpCode: 200, throttle: null, body: 'LogoutDto', params: [], query: [] },
 };
+
+/**
+ * Parámetros de consulta nuevos aprobados para una ruta concreta (más estricto que ALLOWED_NEW_QUERY).
+ * - Fase 4.11: "bind" en GET /api/v1/me/campus-link. Opcional: sin él, la respuesta sigue siendo { url } (ahora el
+ *   paso de vinculación de Moodle); con él, el enlace con el comprobante vinculado a ese navegador.
+ */
+const APPROVED_NEW_QUERY = { 'GET /api/v1/me/campus-link': ['bind'] };
 
 const key = (r) => `${r.method} ${r.path}`;
 const current = routeInventory(AppModule);
@@ -63,7 +71,7 @@ describe('contrato de rutas (método, ruta, permiso, código HTTP, límite, cuer
       const name = (q) => q.split(' ')[0];
       for (const q of before.query) assert.ok(now.query.includes(q), `falta el parámetro de consulta ${q}`);
       for (const q of now.query.filter((x) => !before.query.includes(x))) {
-        assert.ok(ALLOWED_NEW_QUERY.has(name(q)), `parámetro de consulta nuevo no previsto: ${q}`);
+        assert.ok(ALLOWED_NEW_QUERY.has(name(q)) || (APPROVED_NEW_QUERY[key(before)] ?? []).includes(name(q)), `parámetro de consulta nuevo no previsto: ${q}`);
       }
     });
   }
