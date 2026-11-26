@@ -172,9 +172,17 @@ private fun BottomBar(nav: NavHostController, destination: NavDestination?) {
     }
 }
 
-/** Cambia de pestaña conservando el estado de cada una (patrón de navegación inferior de Material). */
-fun NavHostController.navigateToTab(route: Any) = navigate(route) {
-    popUpTo(graph.findStartDestination().id) { saveState = true }
-    launchSingleTop = true
-    restoreState = true
+/**
+ * Cambia de pestaña conservando el estado de cada una (patrón de navegación inferior de Material).
+ * Si la pestaña ya está en la pila (por ejemplo, Inicio con un curso abierto encima), vuelve a su raíz. Antes se
+ * restauraba el estado guardado de esa pestaña, que incluía el curso, y el toque o el deep link parecían no hacer nada
+ * (encontrado en el teléfono, Fase 4.11).
+ */
+fun NavHostController.navigateToTab(route: Any) {
+    if (popBackStack(route, inclusive = false)) return
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
 }

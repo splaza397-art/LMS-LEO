@@ -1,5 +1,6 @@
 package org.iinicia.app
 
+import android.net.Uri
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -47,6 +48,8 @@ class AppUiTest {
     private var loginClicks = 0
     private val opened = mutableListOf<String>()
 
+    private val deepLink = MutableStateFlow<Uri?>(null)
+
     private fun start(signedIn: Boolean = true, fontScale: Float = 1f) {
         auth.state.value = signedIn
         val container = AppContainer(auth, api, MemoryStore(), scheduler)
@@ -55,7 +58,7 @@ class AppUiTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 IiniciaTheme {
-                    AppRoot(container, authViewModel, MutableStateFlow(null), onLogin = { loginClicks++ }, onOpenUrl = { opened += it })
+                    AppRoot(container, authViewModel, deepLink, onLogin = { loginClicks++ }, onOpenUrl = { opened += it })
                 }
             }
         }
@@ -127,6 +130,26 @@ class AppUiTest {
         assertTrue(opened.single().contains("cmid=12"))
         compose.onNodeWithContentDescription("Volver").performClick()
         text("Hola, Ana").assertIsDisplayed()
+    }
+
+    /** Fase 4.11: desde un curso abierto, la pestaña Inicio vuelve a Inicio (antes restauraba el curso y no cambiaba). */
+    @Test fun pestanaInicioDesdeUnCursoVuelveAInicio() {
+        start()
+        text("CF-7").performScrollTo().performClick()
+        text("Abrir en el campus").assertIsDisplayed()
+        text("Inicio").performClick()
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Hola, Ana").fetchSemanticsNodes().isNotEmpty() }
+        text("Abrir en el campus").assertDoesNotExist()
+    }
+
+    /** Fase 4.11: un deep link a Avisos llega aunque haya un curso abierto (por deep link) sobre la pestaña Avisos. */
+    @Test fun deepLinkAAvisosConUnCursoAbierto() {
+        start()
+        text("Avisos").performClick()
+        deepLink.value = Uri.parse("iinicia://curso/7")
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Abrir en el campus").fetchSemanticsNodes().isNotEmpty() }
+        deepLink.value = Uri.parse("iinicia://notificaciones")
+        compose.waitUntil(3_000) { compose.onAllNodesWithText("Abrir en el campus").fetchSemanticsNodes().isEmpty() }
     }
 
     @Test fun avisosNuevosYMarcarComoLeido() {
